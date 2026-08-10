@@ -1,0 +1,3058 @@
+{
+  "Snorunt": [
+    {
+      "location": "Route 1",
+      "method": "Grass/Cave"
+    },
+    {
+      "location": "Route 17",
+      "method": "Grass/Cave"
+    }
+  ],
+  "Pikipek": [
+    {
+      "location": "Route 3",
+      "method": "Grass/Cave"
+    }
+  ],
+  "Wingull": [
+    {
+      "location": "Route 5",
+      "method": "Grass/Cave"
+    }
+  ],
+  "Starly": [
+    {
+      "location": "Route 7",
+      "method": "Grass/Cave"
+    }
+  ],
+  "Lickitung": [
+    {
+      "location": "Route 9 + Autl Woods",
+      "method": "Grass/Cave"
+    }
+  ],
+  "Bunnelby": [
+    {
+      "location": "Route 11",
+      "method": "Grass/Cave"
+    }
+  ],
+  "Yungoos": [
+    {
+      "location": "Route 14",
+      "method": "Grass/Cave"
+    }
+  ],
+  "Snover": [
+    {
+      "location": "Route 17",
+      "method": "Grass/Cave"
+    }
+  ],
+  "Spearow": [
+    {
+      "location": "Ice Hole",
+      "method": "Grass/Cave"
+    }
+  ],
+  "Lotad": [
+    {
+      "location": "Flower Paradise",
+      "method": "Grass/Cave"
+    }
+  ],
+  "Swablu": [
+    {
+      "location": "Cinder Volcano",
+      "method": "Grass/Cave"
+    }
+  ],
+  "Fletchling": [
+    {
+      "location": "KBT Expressway",
+      "method": "Grass/Cave"
+    }
+  ],
+  "Pelipper": [
+    {
+      "location": "Auburn Waterway",
+      "method": "Grass/Cave"
+    },
+    {
+      "location": "Cliff Cave",
+      "method": "Grass/Cave"
+    },
+    {
+      "location": "Route 2",
+      "method": "Surfing"
+    },
+    {
+      "location": "Route 4",
+      "method": "Surfing"
+    },
+    {
+      "location": "Route 6",
+      "method": "Surfing"
+    },
+    {
+      "location": "Route 8",
+      "method": "Surfing"
+    },
+    {
+      "location": "Route 10",
+      "method": "Surfing"
+    },
+    {
+      "location": "Route 12",
+      "method": "Surfing"
+    },
+    {
+      "location": "Route 18",
+      "method": "Surfing"
+    },
+    {
+      "location": "Fallshore City",
+      "method": "Surfing"
+    },
+    {
+      "location": "Epidimy Town",
+      "method": "Surfing"
+    },
+    {
+      "location": "Dehara City",
+      "method": "Surfing"
+    },
+    {
+      "location": "Vivill Town",
+      "method": "Surfing"
+    },
+    {
+      "location": "Seaport City",
+      "method": "Surfing"
+    },
+    {
+      "location": "Icy Hole",
+      "method": "Surfing"
+    },
+    {
+      "location": "Grim Woods",
+      "method": "Surfing"
+    },
+    {
+      "location": "Valley Cave",
+      "method": "Surfing"
+    },
+    {
+      "location": "Frost Mountain",
+      "method": "Surfing"
+    },
+    {
+      "location": "Vivill Woods",
+      "method": "Surfing"
+    },
+    {
+      "location": "Cootes Bog",
+      "method": "Surfing"
+    },
+    {
+      "location": "Magnolia Fields",
+      "method": "Surfing"
+    },
+    {
+      "location": "Cube Corp.",
+      "method": "Surfing"
+    }
+  ],
+  "Tangela": [
+    {
+      "location": "Lost Tunnel",
+      "method": "Grass/Cave"
+    }
+  ],
+  "Skiploom": [
+    {
+      "location": "Cliff Cave",
+      "method": "Grass/Cave"
+    }
+  ],
+  "Farfetch'd": [
+    {
+      "location": "Rift Cave",
+      "method": "Grass/Cave"
+    }
+  ],
+  "Golbat": [
+    {
+      "location": "Antisis Sewers",
+      "method": "Grass/Cave"
+    },
+    {
+      "location": "Rift Cave",
+      "method": "Grass/Cave"
+    },
+    {
+      "location": "Ice Hole",
+      "method": "Grass/Cave"
+    }
+  ],
+  "Caterpie": [
+    {
+      "location": "Safari Zone",
+      "method": "Grass/Cave"
+    }
+  ],
+  "Frozen Heights, Crater,": [
+    {
+      "location": "Victory Road",
+      "method": "Grass/Cave"
+    }
+  ],
+  "Vanillite": [
+    {
+      "location": "Route 1",
+      "method": "Grass/Cave"
+    }
+  ],
+  "Patrat": [
+    {
+      "location": "Route 3",
+      "method": "Grass/Cave"
+    }
+  ],
+  "Bidoof": [
+    {
+      "location": "Route 5",
+      "method": "Grass/Cave"
+    }
+  ],
+  "Budew": [
+    {
+      "location": "Route 7",
+      "method": "Grass/Cave"
+    }
+  ],
+  "Taillow": [
+    {
+      "location": "Route 9 + Autl Woods",
+      "method": "Grass/Cave"
+    }
+  ],
+  "Ledyba": [
+    {
+      "location": "Route 11",
+      "method": "Grass/Cave"
+    }
+  ],
+  "Doduo": [
+    {
+      "location": "Route 14",
+      "method": "Grass/Cave"
+    }
+  ],
+  "Grubbin": [
+    {
+      "location": "Ice Hole",
+      "method": "Grass/Cave"
+    }
+  ],
+  "Tympole": [
+    {
+      "location": "Flower Paradise",
+      "method": "Grass/Cave"
+    }
+  ],
+  "Noctowl": [
+    {
+      "location": "Cinder Volcano",
+      "method": "Grass/Cave"
+    },
+    {
+      "location": "Cliff Cave",
+      "method": "Grass/Cave"
+    },
+    {
+      "location": "Rift Cave",
+      "method": "Grass/Cave"
+    },
+    {
+      "location": "Flower Paradise",
+      "method": "Grass/Cave"
+    }
+  ],
+  "Hoothoot": [
+    {
+      "location": "KBT Expressway",
+      "method": "Grass/Cave"
+    },
+    {
+      "location": "Route 7",
+      "method": "Grass/Cave"
+    },
+    {
+      "location": "Route 14",
+      "method": "Grass/Cave"
+    }
+  ],
+  "Bibarel": [
+    {
+      "location": "Auburn Waterway",
+      "method": "Grass/Cave"
+    }
+  ],
+  "Girafarig": [
+    {
+      "location": "Lost Tunnel",
+      "method": "Grass/Cave"
+    }
+  ],
+  "Hariyama": [
+    {
+      "location": "Antisis Sewers",
+      "method": "Grass/Cave"
+    },
+    {
+      "location": "Cliff Cave",
+      "method": "Grass/Cave"
+    }
+  ],
+  "Zubat": [
+    {
+      "location": "Vivill Woods",
+      "method": "Grass/Cave"
+    },
+    {
+      "location": "Cliff Cave",
+      "method": "Grass/Cave"
+    }
+  ],
+  "Flabébé": [
+    {
+      "location": "Safari Zone",
+      "method": "Grass/Cave"
+    },
+    {
+      "location": "Flower Paradise",
+      "method": "Grass/Cave"
+    }
+  ],
+  "Weedle": [
+    {
+      "location": "Magnolia Fields",
+      "method": "Grass/Cave"
+    }
+  ],
+  "Woobat": [
+    {
+      "location": "Victory Road",
+      "method": "Grass/Cave"
+    },
+    {
+      "location": "Rift Cave",
+      "method": "Grass/Cave"
+    }
+  ],
+  "Delibird": [
+    {
+      "location": "Route 1",
+      "method": "Grass/Cave"
+    }
+  ],
+  "Minccino": [
+    {
+      "location": "Route 3",
+      "method": "Grass/Cave"
+    }
+  ],
+  "Slowpoke": [
+    {
+      "location": "Route 5",
+      "method": "Grass/Cave"
+    },
+    {
+      "location": "Antisis Sewers",
+      "method": "Surfing"
+    }
+  ],
+  "Murkrow": [
+    {
+      "location": "Route 9 + Autl Woods",
+      "method": "Grass/Cave"
+    }
+  ],
+  "Spinarak": [
+    {
+      "location": "Route 11",
+      "method": "Grass/Cave"
+    }
+  ],
+  "Alolan Rattata": [
+    {
+      "location": "Route 14",
+      "method": "Grass/Cave"
+    }
+  ],
+  "Sneasel": [
+    {
+      "location": "Route 17",
+      "method": "Grass/Cave"
+    }
+  ],
+  "Marill": [
+    {
+      "location": "Ice Hole",
+      "method": "Grass/Cave"
+    },
+    {
+      "location": "Flower Paradise",
+      "method": "Grass/Cave"
+    }
+  ],
+  "Exeggcute": [
+    {
+      "location": "Cinder Volcano",
+      "method": "Grass/Cave"
+    }
+  ],
+  "Rockruff": [
+    {
+      "location": "KBT Expressway",
+      "method": "Grass/Cave"
+    }
+  ],
+  "Golduck": [
+    {
+      "location": "Auburn Waterway",
+      "method": "Grass/Cave"
+    },
+    {
+      "location": "Lost Tunnel",
+      "method": "Surfing"
+    },
+    {
+      "location": "Ruins of Void",
+      "method": "Surfing"
+    },
+    {
+      "location": "Remoraid",
+      "method": "Surfing"
+    },
+    {
+      "location": "X",
+      "method": "Surfing"
+    },
+    {
+      "location": "Psyduck",
+      "method": "Surfing"
+    },
+    {
+      "location": "Barboach",
+      "method": "Surfing"
+    }
+  ],
+  "Pancham": [
+    {
+      "location": "Lost Tunnel",
+      "method": "Grass/Cave"
+    }
+  ],
+  "Skuntank": [
+    {
+      "location": "Rift Cave",
+      "method": "Grass/Cave"
+    }
+  ],
+  "Sealeo": [
+    {
+      "location": "Antisis Sewers",
+      "method": "Grass/Cave"
+    },
+    {
+      "location": "Route 17",
+      "method": "Grass/Cave"
+    }
+  ],
+  "Makuhita": [
+    {
+      "location": "Vivill Woods",
+      "method": "Grass/Cave"
+    },
+    {
+      "location": "Auburn Waterway",
+      "method": "Grass/Cave"
+    }
+  ],
+  "Cutiefly": [
+    {
+      "location": "Safari Zone",
+      "method": "Grass/Cave"
+    },
+    {
+      "location": "KBT Expressway",
+      "method": "Grass/Cave"
+    },
+    {
+      "location": "Ice Hole",
+      "method": "Grass/Cave"
+    },
+    {
+      "location": "Flower Paradise",
+      "method": "Grass/Cave"
+    }
+  ],
+  "Seedot": [
+    {
+      "location": "Magnolia Fields",
+      "method": "Grass/Cave"
+    }
+  ],
+  "Slugma": [
+    {
+      "location": "Victory Road",
+      "method": "Grass/Cave"
+    }
+  ],
+  "Minior": [
+    {
+      "location": "Route 1",
+      "method": "Grass/Cave"
+    }
+  ],
+  "Inkay": [
+    {
+      "location": "Route 3",
+      "method": "Grass/Cave"
+    }
+  ],
+  "Shellos": [
+    {
+      "location": "Route 5",
+      "method": "Grass/Cave"
+    }
+  ],
+  "Lillipup": [
+    {
+      "location": "Route 7",
+      "method": "Grass/Cave"
+    }
+  ],
+  "Nidoran♂️": [
+    {
+      "location": "Route 9 + Autl Woods",
+      "method": "Grass/Cave"
+    }
+  ],
+  "Shinx": [
+    {
+      "location": "Route 11",
+      "method": "Grass/Cave"
+    }
+  ],
+  "Cubchoo": [
+    {
+      "location": "Route 17",
+      "method": "Grass/Cave"
+    }
+  ],
+  "Deerling": [
+    {
+      "location": "Ice Hole",
+      "method": "Grass/Cave"
+    }
+  ],
+  "Linoone": [
+    {
+      "location": "Flower Paradise",
+      "method": "Grass/Cave"
+    }
+  ],
+  "Spoink": [
+    {
+      "location": "Cinder Volcano",
+      "method": "Grass/Cave"
+    }
+  ],
+  "Solosis": [
+    {
+      "location": "KBT Expressway",
+      "method": "Grass/Cave"
+    }
+  ],
+  "Gastrodon": [
+    {
+      "location": "Auburn Waterway",
+      "method": "Grass/Cave"
+    }
+  ],
+  "Pawniard": [
+    {
+      "location": "Lost Tunnel",
+      "method": "Grass/Cave"
+    }
+  ],
+  "Tropius": [
+    {
+      "location": "Cliff Cave",
+      "method": "Grass/Cave"
+    }
+  ],
+  "Persian": [
+    {
+      "location": "Rift Cave",
+      "method": "Grass/Cave"
+    }
+  ],
+  "Jynx": [
+    {
+      "location": "Antisis Sewers",
+      "method": "Grass/Cave"
+    }
+  ],
+  "Spheal": [
+    {
+      "location": "Vivill Woods",
+      "method": "Grass/Cave"
+    }
+  ],
+  "Oricorio": [
+    {
+      "location": "Safari Zone",
+      "method": "Grass/Cave"
+    },
+    {
+      "location": "Flower Paradise",
+      "method": "Grass/Cave"
+    }
+  ],
+  "Pumpkaboo": [
+    {
+      "location": "Magnolia Fields",
+      "method": "Grass/Cave"
+    }
+  ],
+  "Salandit": [
+    {
+      "location": "Victory Road",
+      "method": "Grass/Cave"
+    }
+  ],
+  "Shuppet": [
+    {
+      "location": "Safari Zone",
+      "method": "Grass/Cave"
+    }
+  ],
+  "Geodude": [
+    {
+      "location": "Magnolia Fields",
+      "method": "Grass/Cave"
+    },
+    {
+      "location": "Gyarados",
+      "method": "Surfing"
+    }
+  ],
+  "Snubbull": [
+    {
+      "location": "Flower Paradise",
+      "method": "Grass/Cave"
+    }
+  ],
+  "Bellsprout": [
+    {
+      "location": "Cinder Volcano",
+      "method": "Grass/Cave"
+    }
+  ],
+  "Venonat": [
+    {
+      "location": "Route 7",
+      "method": "Grass/Cave"
+    }
+  ],
+  "Ariados": [
+    {
+      "location": "Route 9 + Autl Woods",
+      "method": "Grass/Cave"
+    }
+  ],
+  "Mareep": [
+    {
+      "location": "Route 11",
+      "method": "Grass/Cave"
+    }
+  ],
+  "Stantler": [
+    {
+      "location": "Route 14",
+      "method": "Grass/Cave"
+    },
+    {
+      "location": "Various Locations (Swarm)",
+      "method": "Swarm"
+    }
+  ],
+  "Karrablast": [
+    {
+      "location": "Route 17",
+      "method": "Grass/Cave"
+    },
+    {
+      "location": "Various Locations (Swarm)",
+      "method": "Swarm"
+    }
+  ],
+  "Bayleef": [
+    {
+      "location": "Lost Tunnel",
+      "method": "Grass/Cave"
+    },
+    {
+      "location": "Various Locations (Swarm)",
+      "method": "Swarm"
+    }
+  ],
+  "Eiscue": [
+    {
+      "location": "Cliff Cave",
+      "method": "Grass/Cave"
+    }
+  ],
+  "Magby": [
+    {
+      "location": "Vivill Woods",
+      "method": "Grass/Cave"
+    }
+  ],
+  "Nosepass": [
+    {
+      "location": "Safari Zone",
+      "method": "Grass/Cave"
+    },
+    {
+      "location": "Cliff Cave",
+      "method": "Grass/Cave"
+    },
+    {
+      "location": "Whiscash",
+      "method": "Surfing"
+    }
+  ],
+  "Burmy": [
+    {
+      "location": "Route 5",
+      "method": "Grass/Cave"
+    },
+    {
+      "location": "Various Locations (Swarm)",
+      "method": "Swarm"
+    }
+  ],
+  "Ditto": [
+    {
+      "location": "Route 7",
+      "method": "Grass/Cave"
+    },
+    {
+      "location": "Seaport City",
+      "method": "Mission Reward"
+    }
+  ],
+  "Luxio": [
+    {
+      "location": "Route 9 + Autl Woods",
+      "method": "Grass/Cave"
+    }
+  ],
+  "Shelmet": [
+    {
+      "location": "Route 17",
+      "method": "Grass/Cave"
+    },
+    {
+      "location": "Various Locations (Swarm)",
+      "method": "Swarm"
+    }
+  ],
+  "Regieleki": [
+    {
+      "location": "Lost Tunnel",
+      "method": "Grass/Cave"
+    }
+  ],
+  "Comfey": [
+    {
+      "location": "Rift Cave",
+      "method": "Grass/Cave"
+    },
+    {
+      "location": "Flower Paradise",
+      "method": "Grass/Cave"
+    }
+  ],
+  "Blipbug": [
+    {
+      "location": "Antisis Sewers",
+      "method": "Grass/Cave"
+    }
+  ],
+  "Shadow Basement": [
+    {
+      "location": "Vivill Woods",
+      "method": "Grass/Cave"
+    }
+  ],
+  "Purrloin": [
+    {
+      "location": "Route 7",
+      "method": "Grass/Cave"
+    }
+  ],
+  "Milcery": [
+    {
+      "location": "Ice Hole",
+      "method": "Grass/Cave"
+    }
+  ],
+  "Illumise": [
+    {
+      "location": "KBT Expressway",
+      "method": "Grass/Cave"
+    },
+    {
+      "location": "Various Locations (Swarm)",
+      "method": "Swarm"
+    }
+  ],
+  "Stonjourner": [
+    {
+      "location": "Auburn Waterway",
+      "method": "Grass/Cave"
+    }
+  ],
+  "Regidrago": [
+    {
+      "location": "Lost Tunnel",
+      "method": "Grass/Cave"
+    }
+  ],
+  "Roggenrola": [
+    {
+      "location": "Cliff Cave",
+      "method": "Grass/Cave"
+    },
+    {
+      "location": "Seadra",
+      "method": "Surfing"
+    },
+    {
+      "location": "Gyarados",
+      "method": "Surfing"
+    }
+  ],
+  "Pansage": [
+    {
+      "location": "Rift Cave",
+      "method": "Grass/Cave"
+    }
+  ],
+  "Smeargle": [
+    {
+      "location": "Route 7",
+      "method": "Grass/Cave"
+    },
+    {
+      "location": "Various Locations (Swarm)",
+      "method": "Swarm"
+    }
+  ],
+  "Gumshoos": [
+    {
+      "location": "Route 9 + Autl Woods",
+      "method": "Grass/Cave"
+    }
+  ],
+  "Mr. Rime": [
+    {
+      "location": "Route 11",
+      "method": "Grass/Cave"
+    }
+  ],
+  "Dedenne": [
+    {
+      "location": "Ice Hole",
+      "method": "Grass/Cave"
+    }
+  ],
+  "Eldegoss": [
+    {
+      "location": "Flower Paradise",
+      "method": "Grass/Cave"
+    }
+  ],
+  "Combee": [
+    {
+      "location": "Lost Tunnel",
+      "method": "Grass/Cave"
+    },
+    {
+      "location": "Ice Hole",
+      "method": "Grass/Cave"
+    },
+    {
+      "location": "Flower Paradise",
+      "method": "Grass/Cave"
+    }
+  ],
+  "Magnemite": [
+    {
+      "location": "Magnolia Fields",
+      "method": "Grass/Cave"
+    }
+  ],
+  "Elgyem": [
+    {
+      "location": "Route 7",
+      "method": "Grass/Cave"
+    },
+    {
+      "location": "Various Locations (Swarm)",
+      "method": "Swarm"
+    }
+  ],
+  "Timburr": [
+    {
+      "location": "Safari Zone",
+      "method": "Grass/Cave"
+    }
+  ],
+  "Chewtle": [
+    {
+      "location": "Route 3",
+      "method": "Grass/Cave"
+    }
+  ],
+  "Morpeko": [
+    {
+      "location": "Route 7",
+      "method": "Grass/Cave"
+    }
+  ],
+  "Camerupt": [
+    {
+      "location": "Lost Tunnel",
+      "method": "Grass/Cave"
+    }
+  ],
+  "Dunsparce": [
+    {
+      "location": "Cliff Cave",
+      "method": "Grass/Cave"
+    },
+    {
+      "location": "Various Locations (Swarm)",
+      "method": "Swarm"
+    }
+  ],
+  "Klink": [
+    {
+      "location": "Safari Zone",
+      "method": "Grass/Cave"
+    },
+    {
+      "location": "Rift Cave",
+      "method": "Grass/Cave"
+    }
+  ],
+  "Mr. Mime": [
+    {
+      "location": "Route 9 + Autl Woods",
+      "method": "Grass/Cave"
+    },
+    {
+      "location": "Various Locations (Swarm)",
+      "method": "Swarm"
+    }
+  ],
+  "Swirlix": [
+    {
+      "location": "Route 17",
+      "method": "Grass/Cave"
+    },
+    {
+      "location": "Various Locations (Swarm)",
+      "method": "Swarm"
+    }
+  ],
+  "Elekid": [
+    {
+      "location": "Vivill Woods",
+      "method": "Grass/Cave"
+    }
+  ],
+  "Orange Color: Daytime Encounter: 5:00 AM - 7:59 PM": [
+    {
+      "location": "Route 1",
+      "method": "Grass/Cave"
+    }
+  ],
+  "Excadrill": [
+    {
+      "location": "Cinder Volcano",
+      "method": "Grass/Cave"
+    }
+  ],
+  "Galarian Meowth": [
+    {
+      "location": "KBT Expressway",
+      "method": "Grass/Cave"
+    }
+  ],
+  "Lairon": [
+    {
+      "location": "Auburn Waterway",
+      "method": "Grass/Cave"
+    }
+  ],
+  "Tynamo": [
+    {
+      "location": "Rift Cave",
+      "method": "Grass/Cave"
+    }
+  ],
+  "Indeedee♂️": [
+    {
+      "location": "Route 3",
+      "method": "Grass/Cave"
+    }
+  ],
+  "Galarian Ponyta": [
+    {
+      "location": "Route 9 + Autl Woods",
+      "method": "Grass/Cave"
+    }
+  ],
+  "Bronzong": [
+    {
+      "location": "Antisis Sewers",
+      "method": "Grass/Cave"
+    }
+  ],
+  "Purple Color: Nighttime Encounter: 8:00 PM - 4:59 AM": [
+    {
+      "location": "Route 1",
+      "method": "Grass/Cave"
+    }
+  ],
+  "Red Flowers": [
+    {
+      "location": "Flower Paradise",
+      "method": "Grass/Cave"
+    }
+  ],
+  "Magmar": [
+    {
+      "location": "Cinder Volcano",
+      "method": "Grass/Cave"
+    }
+  ],
+  "Lunatone": [
+    {
+      "location": "Antisis Sewers",
+      "method": "Grass/Cave"
+    }
+  ],
+  "Sinistea": [
+    {
+      "location": "Vivill Woods",
+      "method": "Grass/Cave"
+    }
+  ],
+  "Unown M": [
+    {
+      "location": "Magnolia Fields",
+      "method": "Grass/Cave"
+    }
+  ],
+  "Noibat": [
+    {
+      "location": "Cinder Volcano",
+      "method": "Grass/Cave"
+    }
+  ],
+  "Solrock": [
+    {
+      "location": "Cliff Cave",
+      "method": "Grass/Cave"
+    }
+  ],
+  "Sigilyph": [
+    {
+      "location": "Rift Cave",
+      "method": "Grass/Cave"
+    },
+    {
+      "location": "Safari Zone",
+      "method": "Grass/Cave"
+    }
+  ],
+  "Tauros": [
+    {
+      "location": "Victory Road",
+      "method": "Grass/Cave"
+    },
+    {
+      "location": "Magnolia Fields",
+      "method": "Grass/Cave"
+    },
+    {
+      "location": "Safari Zone",
+      "method": "Grass/Cave"
+    }
+  ],
+  "Rolycoly": [
+    {
+      "location": "KBT Expressway",
+      "method": "Grass/Cave"
+    }
+  ],
+  "Gurdurr": [
+    {
+      "location": "Rift Cave",
+      "method": "Grass/Cave"
+    }
+  ],
+  "Carkol": [
+    {
+      "location": "KBT Expressway",
+      "method": "Grass/Cave"
+    }
+  ],
+  "Unown P": [
+    {
+      "location": "Magnolia Fields",
+      "method": "Grass/Cave"
+    }
+  ],
+  "Unown Q": [
+    {
+      "location": "Safari Zone",
+      "method": "Grass/Cave"
+    }
+  ],
+  "Kangaskhan": [
+    {
+      "location": "Victory Road",
+      "method": "Grass/Cave"
+    },
+    {
+      "location": "Safari Zone",
+      "method": "Grass/Cave"
+    }
+  ],
+  "Blue-Yellow Flowers": [
+    {
+      "location": "Flower Paradise",
+      "method": "Grass/Cave"
+    }
+  ],
+  "Unown R": [
+    {
+      "location": "Vivill Woods",
+      "method": "Grass/Cave"
+    }
+  ],
+  "Treecko": [
+    {
+      "location": "Magnolia Fields",
+      "method": "Grass/Cave"
+    }
+  ],
+  "Arctozolt": [
+    {
+      "location": "Victory Road",
+      "method": "Grass/Cave"
+    }
+  ],
+  "Klang": [
+    {
+      "location": "Cliff Cave",
+      "method": "Grass/Cave"
+    }
+  ],
+  "Unown T": [
+    {
+      "location": "Vivill Woods",
+      "method": "Grass/Cave"
+    }
+  ],
+  "Mudkip": [
+    {
+      "location": "Magnolia Fields",
+      "method": "Grass/Cave"
+    }
+  ],
+  "Magneton": [
+    {
+      "location": "Cliff Cave",
+      "method": "Grass/Cave"
+    }
+  ],
+  "Rhydon": [
+    {
+      "location": "Magnolia Fields",
+      "method": "Grass/Cave"
+    },
+    {
+      "location": "Safari Zone",
+      "method": "Grass/Cave"
+    }
+  ],
+  "Pink-Purple Flowers": [
+    {
+      "location": "Flower Paradise",
+      "method": "Grass/Cave"
+    }
+  ],
+  "Unown U": [
+    {
+      "location": "Vivill Woods",
+      "method": "Grass/Cave"
+    }
+  ],
+  "Wobbuffet": [
+    {
+      "location": "Magnolia Fields",
+      "method": "Grass/Cave"
+    },
+    {
+      "location": "Safari Zone",
+      "method": "Grass/Cave"
+    }
+  ],
+  "Klank": [
+    {
+      "location": "Cliff Cave",
+      "method": "Grass/Cave"
+    }
+  ],
+  "Electabuzz": [
+    {
+      "location": "Cliff Cave",
+      "method": "Grass/Cave"
+    }
+  ],
+  "Eelektrik": [
+    {
+      "location": "Cliff Cave",
+      "method": "Grass/Cave"
+    },
+    {
+      "location": "Lost Tunnel",
+      "method": "Surfing"
+    }
+  ],
+  "Unown Y": [
+    {
+      "location": "Vivill Woods",
+      "method": "Grass/Cave"
+    }
+  ],
+  "Joltik": [
+    {
+      "location": "Cliff Cave",
+      "method": "Grass/Cave"
+    },
+    {
+      "location": "Various Locations (Swarm)",
+      "method": "Swarm"
+    }
+  ],
+  "Unown !": [
+    {
+      "location": "Vivill Woods",
+      "method": "Grass/Cave"
+    }
+  ],
+  "Golisopod": [
+    {
+      "location": "Magnolia Fields",
+      "method": "Grass/Cave"
+    },
+    {
+      "location": "Safari Zone",
+      "method": "Grass/Cave"
+    }
+  ],
+  "Combusken": [
+    {
+      "location": "Safari Zone",
+      "method": "Grass/Cave"
+    }
+  ],
+  "Marshtomp": [
+    {
+      "location": "Safari Zone",
+      "method": "Grass/Cave"
+    }
+  ],
+  "Insane": [
+    {
+      "location": "Safari Zone",
+      "method": "Grass/Cave"
+    }
+  ],
+  "Beartic": [
+    {
+      "location": "Victory Road",
+      "method": "Grass/Cave"
+    }
+  ],
+  "Doublade": [
+    {
+      "location": "Safari Zone",
+      "method": "Grass/Cave"
+    }
+  ],
+  "Alolan Exeggcute": [
+    {
+      "location": "Safari Zone",
+      "method": "Grass/Cave"
+    }
+  ],
+  "Heliolisk": [
+    {
+      "location": "Safari Zone",
+      "method": "Grass/Cave"
+    }
+  ],
+  "Alolan Dugtrio": [
+    {
+      "location": "Safari Zone",
+      "method": "Grass/Cave"
+    }
+  ],
+  "Grovyle": [
+    {
+      "location": "Safari Zone",
+      "method": "Grass/Cave"
+    }
+  ],
+  "Pokémon Unbound Location Guide": [
+    {
+      "location": "Route 1",
+      "method": "Grass/Cave"
+    }
+  ],
+  "Current Game Version:": [
+    {
+      "location": "Route 1",
+      "method": "Grass/Cave"
+    }
+  ],
+  "Credits to:": [
+    {
+      "location": "Route 1",
+      "method": "Grass/Cave"
+    }
+  ],
+  "- sevenk": [
+    {
+      "location": "Route 1",
+      "method": "Grass/Cave"
+    }
+  ],
+  "Unbound's Discord server": [
+    {
+      "location": "Route 1",
+      "method": "Grass/Cave"
+    }
+  ],
+  "Other useful Guides:": [
+    {
+      "location": "Route 1",
+      "method": "Grass/Cave"
+    }
+  ],
+  "- Misson List +": [
+    {
+      "location": "Route 1",
+      "method": "Grass/Cave"
+    }
+  ],
+  "- Battle Frontier Guide": [
+    {
+      "location": "Route 1",
+      "method": "Grass/Cave"
+    }
+  ],
+  "- Trainers Doc": [
+    {
+      "location": "Route 1",
+      "method": "Grass/Cave"
+    }
+  ],
+  "- General Guide": [
+    {
+      "location": "Route 1",
+      "method": "Grass/Cave"
+    }
+  ],
+  "Tentacool": [
+    {
+      "location": "Route 2",
+      "method": "Surfing"
+    },
+    {
+      "location": "Route 4",
+      "method": "Surfing"
+    },
+    {
+      "location": "Route 6",
+      "method": "Surfing"
+    },
+    {
+      "location": "Route 8",
+      "method": "Surfing"
+    },
+    {
+      "location": "Route 10",
+      "method": "Surfing"
+    },
+    {
+      "location": "Route 12",
+      "method": "Surfing"
+    }
+  ],
+  "Surskit": [
+    {
+      "location": "Route 14",
+      "method": "Surfing"
+    },
+    {
+      "location": "Route 16",
+      "method": "Surfing"
+    }
+  ],
+  "Psyduck": [
+    {
+      "location": "Lost Tunnel",
+      "method": "Surfing"
+    },
+    {
+      "location": "Ruins of Void",
+      "method": "Surfing"
+    },
+    {
+      "location": "Poliwag",
+      "method": "Surfing"
+    },
+    {
+      "location": "Cloyster",
+      "method": "Surfing"
+    }
+  ],
+  "Tentacruel": [
+    {
+      "location": "Route 2",
+      "method": "Surfing"
+    },
+    {
+      "location": "Route 4",
+      "method": "Surfing"
+    },
+    {
+      "location": "Route 6",
+      "method": "Surfing"
+    },
+    {
+      "location": "Route 8",
+      "method": "Surfing"
+    },
+    {
+      "location": "Route 10",
+      "method": "Surfing"
+    },
+    {
+      "location": "Route 12",
+      "method": "Surfing"
+    },
+    {
+      "location": "Route 18",
+      "method": "Surfing"
+    },
+    {
+      "location": "Fallshore City",
+      "method": "Surfing"
+    },
+    {
+      "location": "Epidimy Town",
+      "method": "Surfing"
+    },
+    {
+      "location": "Dehara City",
+      "method": "Surfing"
+    },
+    {
+      "location": "Vivill Town",
+      "method": "Surfing"
+    },
+    {
+      "location": "Seaport City",
+      "method": "Surfing"
+    },
+    {
+      "location": "Icy Hole",
+      "method": "Surfing"
+    },
+    {
+      "location": "Grim Woods",
+      "method": "Surfing"
+    },
+    {
+      "location": "Valley Cave",
+      "method": "Surfing"
+    },
+    {
+      "location": "Frost Mountain",
+      "method": "Surfing"
+    },
+    {
+      "location": "Vivill Woods",
+      "method": "Surfing"
+    },
+    {
+      "location": "Cootes Bog",
+      "method": "Surfing"
+    },
+    {
+      "location": "Magnolia Fields",
+      "method": "Surfing"
+    },
+    {
+      "location": "Cube Corp.",
+      "method": "Surfing"
+    }
+  ],
+  "Masquerain": [
+    {
+      "location": "Route 14",
+      "method": "Surfing"
+    },
+    {
+      "location": "Route 16",
+      "method": "Surfing"
+    }
+  ],
+  "Lombre": [
+    {
+      "location": "Route 16",
+      "method": "Surfing"
+    }
+  ],
+  "Lumineon": [
+    {
+      "location": "Ruins of Void",
+      "method": "Surfing"
+    }
+  ],
+  "Poliwag": [
+    {
+      "location": "Antisis Sewers",
+      "method": "Surfing"
+    },
+    {
+      "location": "Staryu",
+      "method": "Surfing"
+    }
+  ],
+  "Basculin": [
+    {
+      "location": "Route 2",
+      "method": "Surfing"
+    },
+    {
+      "location": "Route 6",
+      "method": "Surfing"
+    },
+    {
+      "location": "Route 8",
+      "method": "Surfing"
+    },
+    {
+      "location": "Route 18",
+      "method": "Surfing"
+    },
+    {
+      "location": "Vivill Town",
+      "method": "Surfing"
+    },
+    {
+      "location": "Valley Cave",
+      "method": "Surfing"
+    },
+    {
+      "location": "Magnolia Fields",
+      "method": "Surfing"
+    }
+  ],
+  "Araquanid": [
+    {
+      "location": "Route 4",
+      "method": "Surfing"
+    }
+  ],
+  "Mantyke": [
+    {
+      "location": "Route 10",
+      "method": "Surfing"
+    },
+    {
+      "location": "Route 12",
+      "method": "Surfing"
+    },
+    {
+      "location": "Fallshore City",
+      "method": "Surfing"
+    },
+    {
+      "location": "Seaport City",
+      "method": "Surfing"
+    },
+    {
+      "location": "Icy Hole",
+      "method": "Surfing"
+    },
+    {
+      "location": "Cube Corp.",
+      "method": "Surfing"
+    }
+  ],
+  "Azumarill": [
+    {
+      "location": "Route 14",
+      "method": "Surfing"
+    },
+    {
+      "location": "Lost Tunnel",
+      "method": "Surfing"
+    },
+    {
+      "location": "Cube Corp.",
+      "method": "Surfing"
+    }
+  ],
+  "Alomomola": [
+    {
+      "location": "Epidimy Town",
+      "method": "Surfing"
+    }
+  ],
+  "Mantine": [
+    {
+      "location": "Dehara City",
+      "method": "Surfing"
+    },
+    {
+      "location": "Grim Woods",
+      "method": "Surfing"
+    },
+    {
+      "location": "Cootes Bog",
+      "method": "Surfing"
+    }
+  ],
+  "Pyukumuku": [
+    {
+      "location": "Frost Mountain",
+      "method": "Surfing"
+    },
+    {
+      "location": "Vivill Woods",
+      "method": "Surfing"
+    }
+  ],
+  "Politoed": [
+    {
+      "location": "Antisis Sewers",
+      "method": "Surfing"
+    },
+    {
+      "location": "Seadra",
+      "method": "Surfing"
+    }
+  ],
+  "Lapras": [
+    {
+      "location": "Icy Hole",
+      "method": "Surfing"
+    }
+  ],
+  "Arrokuda": [
+    {
+      "location": "Route 8",
+      "method": "Surfing"
+    }
+  ],
+  "Cramorant": [
+    {
+      "location": "Route 10",
+      "method": "Surfing"
+    }
+  ],
+  "Galarian Slowpoke": [
+    {
+      "location": "Route 14",
+      "method": "Surfing"
+    },
+    {
+      "location": "Route 16",
+      "method": "Surfing"
+    }
+  ],
+  "Enamorus": [
+    {
+      "location": "Magnolia Fields",
+      "method": "Surfing"
+    }
+  ],
+  "Arctovish": [
+    {
+      "location": "Cube Corp.",
+      "method": "Surfing"
+    }
+  ],
+  "Magcargo": [
+    {
+      "location": "Route 2",
+      "method": "Surfing"
+    }
+  ],
+  "Magikarp": [
+    {
+      "location": "Route 2",
+      "method": "Surfing"
+    },
+    {
+      "location": "Route 4",
+      "method": "Surfing"
+    },
+    {
+      "location": "Route 6",
+      "method": "Surfing"
+    },
+    {
+      "location": "Route 8",
+      "method": "Surfing"
+    },
+    {
+      "location": "Route 10",
+      "method": "Surfing"
+    },
+    {
+      "location": "Route 12",
+      "method": "Surfing"
+    }
+  ],
+  "Shellder": [
+    {
+      "location": "Staryu",
+      "method": "Surfing"
+    },
+    {
+      "location": "Horsea",
+      "method": "Surfing"
+    },
+    {
+      "location": "Remoraid",
+      "method": "Surfing"
+    },
+    {
+      "location": "Good Rod",
+      "method": "Surfing"
+    },
+    {
+      "location": "Psyduck",
+      "method": "Surfing"
+    },
+    {
+      "location": "Gyarados",
+      "method": "Surfing"
+    },
+    {
+      "location": "Roggenrola",
+      "method": "Surfing"
+    }
+  ],
+  "Krabby": [
+    {
+      "location": "Staryu",
+      "method": "Surfing"
+    },
+    {
+      "location": "Gyarados",
+      "method": "Surfing"
+    },
+    {
+      "location": "Roggenrola",
+      "method": "Surfing"
+    }
+  ],
+  "Staryu": [
+    {
+      "location": "Corphish",
+      "method": "Surfing"
+    },
+    {
+      "location": "Staryu",
+      "method": "Surfing"
+    },
+    {
+      "location": "Remoraid",
+      "method": "Surfing"
+    }
+  ],
+  "Remoraid": [
+    {
+      "location": "Goldeen",
+      "method": "Surfing"
+    }
+  ],
+  "Corsola": [
+    {
+      "location": "Remoraid",
+      "method": "Surfing"
+    },
+    {
+      "location": "Starmie",
+      "method": "Surfing"
+    },
+    {
+      "location": "Roggenrola",
+      "method": "Surfing"
+    }
+  ],
+  "Carvanha": [
+    {
+      "location": "Remoraid",
+      "method": "Surfing"
+    },
+    {
+      "location": "Gyarados",
+      "method": "Surfing"
+    }
+  ],
+  "Goldeen": [
+    {
+      "location": "Wishiwashi",
+      "method": "Surfing"
+    }
+  ],
+  "Luvdisc": [
+    {
+      "location": "Barboach",
+      "method": "Surfing"
+    },
+    {
+      "location": "Staryu",
+      "method": "Surfing"
+    },
+    {
+      "location": "Wishiwashi",
+      "method": "Surfing"
+    },
+    {
+      "location": "Gyarados",
+      "method": "Surfing"
+    },
+    {
+      "location": "Cloyster",
+      "method": "Surfing"
+    },
+    {
+      "location": "Luvdisc",
+      "method": "Surfing"
+    }
+  ],
+  "Horsea": [
+    {
+      "location": "Remoraid",
+      "method": "Surfing"
+    },
+    {
+      "location": "Gyarados",
+      "method": "Surfing"
+    }
+  ],
+  "Barboach": [
+    {
+      "location": "Good Rod",
+      "method": "Surfing"
+    }
+  ],
+  "Lanturn": [
+    {
+      "location": "Remoraid",
+      "method": "Surfing"
+    },
+    {
+      "location": "Gyarados",
+      "method": "Surfing"
+    },
+    {
+      "location": "Seadra",
+      "method": "Surfing"
+    },
+    {
+      "location": "Luvdisc",
+      "method": "Surfing"
+    }
+  ],
+  "Muk": [
+    {
+      "location": "Good Rod",
+      "method": "Surfing"
+    }
+  ],
+  "Wishiwashi": [
+    {
+      "location": "X",
+      "method": "Surfing"
+    }
+  ],
+  "Seadra": [
+    {
+      "location": "Poliwag",
+      "method": "Surfing"
+    },
+    {
+      "location": "X",
+      "method": "Surfing"
+    },
+    {
+      "location": "Horsea",
+      "method": "Surfing"
+    },
+    {
+      "location": "Roggenrola",
+      "method": "Surfing"
+    },
+    {
+      "location": "Luvdisc",
+      "method": "Surfing"
+    }
+  ],
+  "Octillery": [
+    {
+      "location": "Staryu",
+      "method": "Surfing"
+    },
+    {
+      "location": "Goldeen",
+      "method": "Surfing"
+    },
+    {
+      "location": "Horsea",
+      "method": "Surfing"
+    },
+    {
+      "location": "Remoraid",
+      "method": "Surfing"
+    }
+  ],
+  "Dewgong": [
+    {
+      "location": "Horsea",
+      "method": "Surfing"
+    },
+    {
+      "location": "Remoraid",
+      "method": "Surfing"
+    }
+  ],
+  "Gyarados": [
+    {
+      "location": "Horsea",
+      "method": "Surfing"
+    }
+  ],
+  "Floatzel": [
+    {
+      "location": "Good Rod",
+      "method": "Surfing"
+    }
+  ],
+  "Crawdaunt": [
+    {
+      "location": "Corphish",
+      "method": "Surfing"
+    }
+  ],
+  "Seaking": [
+    {
+      "location": "X",
+      "method": "Surfing"
+    },
+    {
+      "location": "Remoraid",
+      "method": "Surfing"
+    }
+  ],
+  "Poliwhirl": [
+    {
+      "location": "Poliwag",
+      "method": "Surfing"
+    },
+    {
+      "location": "Remoraid",
+      "method": "Surfing"
+    }
+  ],
+  "Starmie": [
+    {
+      "location": "Gyarados",
+      "method": "Surfing"
+    }
+  ],
+  "Kingler": [
+    {
+      "location": "Shellder",
+      "method": "Surfing"
+    },
+    {
+      "location": "Roggenrola",
+      "method": "Surfing"
+    },
+    {
+      "location": "Starmie",
+      "method": "Surfing"
+    }
+  ],
+  "Binacle": [
+    {
+      "location": "Roggenrola",
+      "method": "Surfing"
+    },
+    {
+      "location": "Gyarados",
+      "method": "Surfing"
+    },
+    {
+      "location": "Route 2",
+      "method": "Static"
+    }
+  ],
+  "Shuckle": [
+    {
+      "location": "Rock Smash",
+      "method": "Surfing"
+    },
+    {
+      "location": "Gyarados",
+      "method": "Surfing"
+    }
+  ],
+  "Alolan Graveler": [
+    {
+      "location": "Gyarados",
+      "method": "Surfing"
+    }
+  ],
+  "Underwater": [
+    {
+      "location": "Gyarados",
+      "method": "Surfing"
+    },
+    {
+      "location": "Luvdisc",
+      "method": "Surfing"
+    }
+  ],
+  "East": [
+    {
+      "location": "Roggenrola",
+      "method": "Surfing"
+    },
+    {
+      "location": "Luvdisc",
+      "method": "Surfing"
+    }
+  ],
+  "Graveler": [
+    {
+      "location": "Whiscash",
+      "method": "Surfing"
+    }
+  ],
+  "Bergmite": [
+    {
+      "location": "Gyarados",
+      "method": "Surfing"
+    }
+  ],
+  "Onix": [
+    {
+      "location": "Cloyster",
+      "method": "Surfing"
+    }
+  ],
+  "Outside": [
+    {
+      "location": "Seadra",
+      "method": "Surfing"
+    }
+  ],
+  "Toxapex": [
+    {
+      "location": "Gyarados",
+      "method": "Surfing"
+    },
+    {
+      "location": "Luvdisc",
+      "method": "Surfing"
+    }
+  ],
+  "Dome Fossil": [
+    {
+      "location": "Seadra",
+      "method": "Surfing"
+    }
+  ],
+  "Chinchou": [
+    {
+      "location": "Gyarados",
+      "method": "Surfing"
+    },
+    {
+      "location": "Luvdisc",
+      "method": "Surfing"
+    }
+  ],
+  "Small Island": [
+    {
+      "location": "Roggenrola",
+      "method": "Surfing"
+    }
+  ],
+  "Jaw Fossil": [
+    {
+      "location": "Gyarados",
+      "method": "Surfing"
+    }
+  ],
+  "Relicanth": [
+    {
+      "location": "Seadra",
+      "method": "Surfing"
+    }
+  ],
+  "Root Fossil": [
+    {
+      "location": "Gyarados",
+      "method": "Surfing"
+    }
+  ],
+  "Wailord": [
+    {
+      "location": "Roggenrola",
+      "method": "Surfing"
+    }
+  ],
+  "West": [
+    {
+      "location": "Roggenrola",
+      "method": "Surfing"
+    }
+  ],
+  "Maze Area": [
+    {
+      "location": "Seadra",
+      "method": "Surfing"
+    }
+  ],
+  "Cloyster": [
+    {
+      "location": "Luvdisc",
+      "method": "Surfing"
+    }
+  ],
+  "Sharpedo": [
+    {
+      "location": "Luvdisc",
+      "method": "Surfing"
+    },
+    {
+      "location": "Route 17",
+      "method": "Static"
+    }
+  ],
+  "Clamperl": [
+    {
+      "location": "Luvdisc",
+      "method": "Surfing"
+    }
+  ],
+  "Mareanie": [
+    {
+      "location": "Luvdisc",
+      "method": "Surfing"
+    }
+  ],
+  "Litleo": [
+    {
+      "location": "Route 2",
+      "method": "Gift"
+    }
+  ],
+  "Carbink": [
+    {
+      "location": "KBT Expressway",
+      "method": "Static"
+    }
+  ],
+  "Crabominable": [
+    {
+      "location": "Blizzard City",
+      "method": "Static"
+    }
+  ],
+  "Alolan Vulpix Egg": [
+    {
+      "location": "Blizzard City",
+      "method": "Mission Reward"
+    }
+  ],
+  "Togepi Egg": [
+    {
+      "location": "Fallshore City",
+      "method": "Gift"
+    }
+  ],
+  "Shiny Gigantamax Garbodor": [
+    {
+      "location": "Fallshore City",
+      "method": "Mission Reward"
+    }
+  ],
+  "Gigantamax Butterfree": [
+    {
+      "location": "Fallshore City",
+      "method": "Mission Reward"
+    }
+  ],
+  "Wild Encounters": [
+    {
+      "location": "Lost Tunnel",
+      "method": "Static"
+    }
+  ],
+  "Elekid Egg": [
+    {
+      "location": "Epidimy Town",
+      "method": "Mission Reward"
+    }
+  ],
+  "Flying Pikachu": [
+    {
+      "location": "Dehara City",
+      "method": "Mission Reward"
+    }
+  ],
+  "Maractus": [
+    {
+      "location": "Great Desert",
+      "method": "Static"
+    }
+  ],
+  "Larvesta Egg": [
+    {
+      "location": "Gurun Town",
+      "method": "Mission Reward"
+    }
+  ],
+  "Spiritomb": [
+    {
+      "location": "Gurun Town",
+      "method": "Static"
+    }
+  ],
+  "Devon Scope": [
+    {
+      "location": "Route 16",
+      "method": "Static"
+    }
+  ],
+  "Trubbish/Garbodor": [
+    {
+      "location": "Antisis City",
+      "method": "Static"
+    }
+  ],
+  "Alolan Grimer Egg": [
+    {
+      "location": "Antisis City",
+      "method": "Mission Reward"
+    }
+  ],
+  "Spiky-Eared Pichu": [
+    {
+      "location": "Seaport City",
+      "method": "Gift"
+    }
+  ],
+  "Do the Home for a Hobo mission": [
+    {
+      "location": "Seaport City",
+      "method": "Static"
+    }
+  ],
+  "Castform": [
+    {
+      "location": "Seaport City",
+      "method": "Gift"
+    }
+  ],
+  "Feebas": [
+    {
+      "location": "Polder Town",
+      "method": "Mission Reward"
+    }
+  ],
+  "Rotom": [
+    {
+      "location": "Polder Town",
+      "method": "Mission Reward"
+    }
+  ],
+  "Feraligatr": [
+    {
+      "location": "Cootes Bog",
+      "method": "Static"
+    }
+  ],
+  "Shiny Vivillon": [
+    {
+      "location": "Magnolia Town",
+      "method": "Mission Reward"
+    }
+  ],
+  "Shiny Magikarp": [
+    {
+      "location": "Redwood Village",
+      "method": "Mission Reward"
+    }
+  ],
+  "Snorlax": [
+    {
+      "location": "Redwood Forest",
+      "method": "Static"
+    }
+  ],
+  "Zoroark": [
+    {
+      "location": "Redwood Forest",
+      "method": "Static"
+    }
+  ],
+  "Free egg one a day": [
+    {
+      "location": "Magnolia Café",
+      "method": "Random Egg"
+    }
+  ],
+  "A": [
+    {
+      "location": "Suicune",
+      "method": "Legendary/Mythical"
+    },
+    {
+      "location": "Location",
+      "method": "Legendary/Mythical"
+    },
+    {
+      "location": "Frozen Height",
+      "method": "Legendary/Mythical"
+    },
+    {
+      "location": "Mission",
+      "method": "Legendary/Mythical"
+    },
+    {
+      "location": "Raikou",
+      "method": "Legendary/Mythical"
+    },
+    {
+      "location": "Thundercap Mt.",
+      "method": "Legendary/Mythical"
+    },
+    {
+      "location": "Entei",
+      "method": "Legendary/Mythical"
+    },
+    {
+      "location": "Cinder Volcano",
+      "method": "Legendary/Mythical"
+    },
+    {
+      "location": "Lugia + Ho-Oh",
+      "method": "Legendary/Mythical"
+    },
+    {
+      "location": "Pokémon Center",
+      "method": "Legendary/Mythical"
+    },
+    {
+      "location": "Roaming",
+      "method": "Legendary/Mythical"
+    },
+    {
+      "location": "Celebi",
+      "method": "Legendary/Mythical"
+    },
+    {
+      "location": "Mission HQ",
+      "method": "Legendary/Mythical"
+    },
+    {
+      "location": "Spiky-Eared Pichu",
+      "method": "Legendary/Mythical"
+    }
+  ],
+  "C": [
+    {
+      "location": "Groudon",
+      "method": "Legendary/Mythical"
+    },
+    {
+      "location": "Location",
+      "method": "Legendary/Mythical"
+    },
+    {
+      "location": "Ruins of Void",
+      "method": "Legendary/Mythical"
+    },
+    {
+      "location": "Red Orb",
+      "method": "Legendary/Mythical"
+    },
+    {
+      "location": "Kyogre",
+      "method": "Legendary/Mythical"
+    },
+    {
+      "location": "Blue Orb",
+      "method": "Legendary/Mythical"
+    },
+    {
+      "location": "Rayquaza",
+      "method": "Legendary/Mythical"
+    },
+    {
+      "location": "Jade Orb",
+      "method": "Legendary/Mythical"
+    },
+    {
+      "location": "Jirachi",
+      "method": "Legendary/Mythical"
+    },
+    {
+      "location": "Mission",
+      "method": "Legendary/Mythical"
+    },
+    {
+      "location": "Deoxys",
+      "method": "Legendary/Mythical"
+    },
+    {
+      "location": "Redwood Village",
+      "method": "Legendary/Mythical"
+    },
+    {
+      "location": "Pkm League",
+      "method": "Legendary/Mythical"
+    }
+  ],
+  "E": [
+    {
+      "location": "Heatran",
+      "method": "Legendary/Mythical"
+    },
+    {
+      "location": "Location",
+      "method": "Legendary/Mythical"
+    },
+    {
+      "location": "Route 18",
+      "method": "Legendary/Mythical"
+    },
+    {
+      "location": "Mission HQ",
+      "method": "Legendary/Mythical"
+    },
+    {
+      "location": "Regigigas",
+      "method": "Legendary/Mythical"
+    },
+    {
+      "location": "Great Desert",
+      "method": "Legendary/Mythical"
+    },
+    {
+      "location": "Giratina",
+      "method": "Legendary/Mythical"
+    },
+    {
+      "location": "Frozen Forest",
+      "method": "Legendary/Mythical"
+    },
+    {
+      "location": "Cresselia",
+      "method": "Legendary/Mythical"
+    },
+    {
+      "location": "All Plates",
+      "method": "Legendary/Mythical"
+    },
+    {
+      "location": "Phione",
+      "method": "Legendary/Mythical"
+    },
+    {
+      "location": "Dehara City",
+      "method": "Legendary/Mythical"
+    }
+  ],
+  "G": [
+    {
+      "location": "Swords of Justice",
+      "method": "Legendary/Mythical"
+    },
+    {
+      "location": "Location",
+      "method": "Legendary/Mythical"
+    },
+    {
+      "location": "Cinder Volcano",
+      "method": "Legendary/Mythical"
+    },
+    {
+      "location": "Defeat Toxapex",
+      "method": "Legendary/Mythical"
+    },
+    {
+      "location": "Tornadus, Thundurus",
+      "method": "Legendary/Mythical"
+    },
+    {
+      "location": "Vivill Warehouse",
+      "method": "Legendary/Mythical"
+    },
+    {
+      "location": "Tarmigan Town",
+      "method": "Legendary/Mythical"
+    },
+    {
+      "location": "Reshiram",
+      "method": "Legendary/Mythical"
+    },
+    {
+      "location": "Crystal Peak",
+      "method": "Legendary/Mythical"
+    },
+    {
+      "location": "Night",
+      "method": "Legendary/Mythical"
+    },
+    {
+      "location": "Zekrom",
+      "method": "Legendary/Mythical"
+    },
+    {
+      "location": "Crater Town",
+      "method": "Legendary/Mythical"
+    },
+    {
+      "location": "Mission",
+      "method": "Legendary/Mythical"
+    },
+    {
+      "location": "Landorus",
+      "method": "Legendary/Mythical"
+    },
+    {
+      "location": "Route 13",
+      "method": "Legendary/Mythical"
+    },
+    {
+      "location": "Tornadus",
+      "method": "Legendary/Mythical"
+    }
+  ],
+  "I": [
+    {
+      "location": "Yveltal",
+      "method": "Legendary/Mythical"
+    },
+    {
+      "location": "Location",
+      "method": "Legendary/Mythical"
+    },
+    {
+      "location": "Tarmigan Town",
+      "method": "Legendary/Mythical"
+    },
+    {
+      "location": "Mission HQ",
+      "method": "Legendary/Mythical"
+    },
+    {
+      "location": "Zygarde",
+      "method": "Legendary/Mythical"
+    },
+    {
+      "location": "Shadow Base",
+      "method": "Legendary/Mythical"
+    },
+    {
+      "location": "Mission",
+      "method": "Legendary/Mythical"
+    },
+    {
+      "location": "Diancie",
+      "method": "Legendary/Mythical"
+    },
+    {
+      "location": "Route 18",
+      "method": "Legendary/Mythical"
+    },
+    {
+      "location": "Crater Town",
+      "method": "Legendary/Mythical"
+    },
+    {
+      "location": "Hoopa",
+      "method": "Legendary/Mythical"
+    },
+    {
+      "location": "Cave of Being",
+      "method": "Legendary/Mythical"
+    },
+    {
+      "location": "Night",
+      "method": "Legendary/Mythical"
+    },
+    {
+      "location": "Volcanion",
+      "method": "Legendary/Mythical"
+    },
+    {
+      "location": "Rift Cave",
+      "method": "Legendary/Mythical"
+    }
+  ],
+  "K": [
+    {
+      "location": "Cosmog",
+      "method": "Legendary/Mythical"
+    },
+    {
+      "location": "Location",
+      "method": "Legendary/Mythical"
+    },
+    {
+      "location": "Cinder Volcano",
+      "method": "Legendary/Mythical"
+    },
+    {
+      "location": "Night",
+      "method": "Legendary/Mythical"
+    },
+    {
+      "location": "Solgaleo/Lunala",
+      "method": "Legendary/Mythical"
+    },
+    {
+      "location": "Icy Hole",
+      "method": "Legendary/Mythical"
+    },
+    {
+      "location": "Mission",
+      "method": "Legendary/Mythical"
+    },
+    {
+      "location": "Nihilego",
+      "method": "Legendary/Mythical"
+    },
+    {
+      "location": "Distortion World",
+      "method": "Legendary/Mythical"
+    },
+    {
+      "location": "Buzzwole",
+      "method": "Legendary/Mythical"
+    },
+    {
+      "location": "Fullmoon Island",
+      "method": "Legendary/Mythical"
+    },
+    {
+      "location": "Pheromosa",
+      "method": "Legendary/Mythical"
+    },
+    {
+      "location": "Requires",
+      "method": "Legendary/Mythical"
+    },
+    {
+      "location": "Post-Game",
+      "method": "Legendary/Mythical"
+    }
+  ],
+  "M": [
+    {
+      "location": "Magearna",
+      "method": "Legendary/Mythical"
+    },
+    {
+      "location": "Location",
+      "method": "Legendary/Mythical"
+    },
+    {
+      "location": "RoV",
+      "method": "Legendary/Mythical"
+    },
+    {
+      "location": "ADM",
+      "method": "Legendary/Mythical"
+    },
+    {
+      "location": "Marshadow",
+      "method": "Legendary/Mythical"
+    },
+    {
+      "location": "Newmoon Island",
+      "method": "Legendary/Mythical"
+    },
+    {
+      "location": "Night",
+      "method": "Legendary/Mythical"
+    },
+    {
+      "location": "5GQ3CU5UZ7WS",
+      "method": "Legendary/Mythical"
+    },
+    {
+      "location": "Poipole",
+      "method": "Legendary/Mythical"
+    },
+    {
+      "location": "Flower Paradise",
+      "method": "Legendary/Mythical"
+    },
+    {
+      "location": "Day",
+      "method": "Legendary/Mythical"
+    },
+    {
+      "location": "4QP1SH1BN8JF",
+      "method": "Legendary/Mythical"
+    },
+    {
+      "location": "Stakataka",
+      "method": "Legendary/Mythical"
+    },
+    {
+      "location": "Dream Lab",
+      "method": "Legendary/Mythical"
+    },
+    {
+      "location": "Blacephalon",
+      "method": "Legendary/Mythical"
+    },
+    {
+      "location": "Requires",
+      "method": "Legendary/Mythical"
+    },
+    {
+      "location": "Thundurus",
+      "method": "Legendary/Mythical"
+    }
+  ],
+  "O": [
+    {
+      "location": "Location",
+      "method": "Legendary/Mythical"
+    },
+    {
+      "location": "Victory Road",
+      "method": "Legendary/Mythical"
+    },
+    {
+      "location": "Magnolia Fields",
+      "method": "Legendary/Mythical"
+    },
+    {
+      "location": "Crystal Peak",
+      "method": "Legendary/Mythical"
+    },
+    {
+      "location": "Requires",
+      "method": "Legendary/Mythical"
+    },
+    {
+      "location": "Post-Game",
+      "method": "Legendary/Mythical"
+    }
+  ],
+  "Q": [
+    {
+      "location": "Location",
+      "method": "Legendary/Mythical"
+    },
+    {
+      "location": "Victory Road",
+      "method": "Legendary/Mythical"
+    },
+    {
+      "location": "Route 17",
+      "method": "Legendary/Mythical"
+    },
+    {
+      "location": "Polder Town",
+      "method": "Legendary/Mythical"
+    },
+    {
+      "location": "Pokémon Center",
+      "method": "Legendary/Mythical"
+    },
+    {
+      "location": "Requires",
+      "method": "Legendary/Mythical"
+    },
+    {
+      "location": "Re-beat the E4",
+      "method": "Legendary/Mythical"
+    }
+  ],
+  "S": [
+    {
+      "location": "Location",
+      "method": "Legendary/Mythical"
+    },
+    {
+      "location": "Crystal Peak",
+      "method": "Legendary/Mythical"
+    },
+    {
+      "location": "Dresco Town",
+      "method": "Legendary/Mythical"
+    },
+    {
+      "location": "KBT Expressway",
+      "method": "Legendary/Mythical"
+    },
+    {
+      "location": "Requires",
+      "method": "Legendary/Mythical"
+    },
+    {
+      "location": "Post-Game",
+      "method": "Legendary/Mythical"
+    }
+  ],
+  "U": [
+    {
+      "location": "Location",
+      "method": "Legendary/Mythical"
+    },
+    {
+      "location": "Mision HQ",
+      "method": "Legendary/Mythical"
+    },
+    {
+      "location": "Route 11",
+      "method": "Legendary/Mythical"
+    },
+    {
+      "location": "Route 17",
+      "method": "Legendary/Mythical"
+    },
+    {
+      "location": "Route 9",
+      "method": "Legendary/Mythical"
+    },
+    {
+      "location": "Requires",
+      "method": "Legendary/Mythical"
+    },
+    {
+      "location": "Post-Game",
+      "method": "Legendary/Mythical"
+    }
+  ],
+  "W": [
+    {
+      "location": "Location",
+      "method": "Legendary/Mythical"
+    },
+    {
+      "location": "Route 12",
+      "method": "Legendary/Mythical"
+    },
+    {
+      "location": "Route 14",
+      "method": "Legendary/Mythical"
+    },
+    {
+      "location": "Route 4",
+      "method": "Legendary/Mythical"
+    },
+    {
+      "location": "Requires",
+      "method": "Legendary/Mythical"
+    },
+    {
+      "location": "Solgaleo + Lunala",
+      "method": "Legendary/Mythical"
+    }
+  ],
+  "Y": [
+    {
+      "location": "Location",
+      "method": "Legendary/Mythical"
+    },
+    {
+      "location": "Thundercap Mt.",
+      "method": "Legendary/Mythical"
+    },
+    {
+      "location": "Crater Town",
+      "method": "Legendary/Mythical"
+    },
+    {
+      "location": "Vivill Woods",
+      "method": "Legendary/Mythical"
+    },
+    {
+      "location": "Antisis Sewers",
+      "method": "Legendary/Mythical"
+    },
+    {
+      "location": "Requires",
+      "method": "Legendary/Mythical"
+    },
+    {
+      "location": "Post-Game",
+      "method": "Legendary/Mythical"
+    }
+  ],
+  "AA": [
+    {
+      "location": "Location",
+      "method": "Legendary/Mythical"
+    },
+    {
+      "location": "Tomb of Borrius",
+      "method": "Legendary/Mythical"
+    },
+    {
+      "location": "Pokémon Center",
+      "method": "Legendary/Mythical"
+    },
+    {
+      "location": "Route 7",
+      "method": "Legendary/Mythical"
+    }
+  ],
+  "AC": [
+    {
+      "location": "Location",
+      "method": "Legendary/Mythical"
+    },
+    {
+      "location": "Thundercap Mt.",
+      "method": "Legendary/Mythical"
+    },
+    {
+      "location": "Pokémon Center",
+      "method": "Legendary/Mythical"
+    },
+    {
+      "location": "Vivill Warehouse",
+      "method": "Legendary/Mythical"
+    }
+  ],
+  "Sentret": [
+    {
+      "location": "Various Locations (Swarm)",
+      "method": "Swarm"
+    }
+  ],
+  "Quilava": [
+    {
+      "location": "Various Locations (Swarm)",
+      "method": "Swarm"
+    }
+  ],
+  "Pikachu": [
+    {
+      "location": "Various Locations (Swarm)",
+      "method": "Swarm"
+    }
+  ],
+  "Vulpix": [
+    {
+      "location": "Various Locations (Swarm)",
+      "method": "Swarm"
+    }
+  ],
+  "Nincada": [
+    {
+      "location": "Various Locations (Swarm)",
+      "method": "Swarm"
+    }
+  ],
+  "Volbeat": [
+    {
+      "location": "Various Locations (Swarm)",
+      "method": "Swarm"
+    }
+  ],
+  "Ferroseed": [
+    {
+      "location": "Various Locations (Swarm)",
+      "method": "Swarm"
+    }
+  ],
+  "Whirlpide": [
+    {
+      "location": "Various Locations (Swarm)",
+      "method": "Swarm"
+    }
+  ],
+  "Poochyena": [
+    {
+      "location": "Various Locations (Swarm)",
+      "method": "Swarm"
+    }
+  ],
+  "Croconaw": [
+    {
+      "location": "Various Locations (Swarm)",
+      "method": "Swarm"
+    }
+  ],
+  "Glameow": [
+    {
+      "location": "Various Locations (Swarm)",
+      "method": "Swarm"
+    }
+  ],
+  "Spritzee": [
+    {
+      "location": "Various Locations (Swarm)",
+      "method": "Swarm"
+    }
+  ]
+}
