@@ -665,6 +665,13 @@ button.btn-danger:hover {
   padding: 0.08rem 0.32rem;
 }
 
+.type-chip-lg {
+  font-size: 0.95rem;
+  padding: 0.28rem 0.9rem;
+  border-radius: 6px;
+  letter-spacing: 0.04em;
+}
+
 .type-chips {
   display: flex;
   flex-wrap: wrap;
@@ -874,6 +881,79 @@ button.btn-danger:hover {
   justify-content: space-between;
   gap: 0.5rem;
   margin-bottom: 0.35rem;
+}
+
+/* ---- Caught Pokémon cards ---- */
+.caught-list {
+  margin-top: 0.6rem;
+  display: grid;
+  gap: 0.8rem;
+}
+
+.caught-card {
+  border: 1px solid #d9e4ee;
+  border-radius: 12px;
+  padding: 0.85rem 1rem 1rem;
+  background: linear-gradient(180deg, #f7fbff 0%, #ffffff 60px);
+}
+
+.caught-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.7rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px dashed #d9e4ee;
+}
+
+.caught-card-title {
+  font-weight: 700;
+  font-size: 0.85rem;
+  color: #1f5f95;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.caught-badges {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 0.6rem;
+  margin-bottom: 0.8rem;
+}
+
+.caught-badge {
+  display: grid;
+  gap: 0.15rem;
+  padding: 0.4rem 0.6rem;
+  background: #eef4fa;
+  border-radius: 8px;
+}
+
+.caught-badge-label {
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #6b8093;
+}
+
+.caught-badge-value {
+  font-size: 0.85rem;
+  color: #1f3a4d;
+  font-weight: 600;
+}
+
+.caught-spread-value {
+  font-size: 0.78rem;
+  font-weight: 500;
+}
+
+.caught-stats-block,
+.caught-moves-block {
+  margin-top: 0.7rem;
+  padding-top: 0.7rem;
+  border-top: 1px dashed #e1e8f0;
 }
 
 /* ---- Modal ---- */

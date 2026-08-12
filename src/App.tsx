@@ -936,6 +936,22 @@ function App() {
     return map;
   }, [tmhmMoveSlugs, moveKeyBySlug, tmhmNumbersBySlug]);
 
+  const sortedTmhmMoveKeys = useMemo(() => {
+    const rank = (key: string) => {
+      const label = tmhmNumberByMoveKey.get(key);
+      const match = label?.match(/^(HM|TM|TR)(\d+)/i);
+      if (!match) return { group: 3, num: Number.MAX_SAFE_INTEGER };
+      const groupOrder: Record<string, number> = { HM: 0, TM: 1, TR: 2 };
+      return { group: groupOrder[match[1].toUpperCase()] ?? 3, num: Number(match[2]) };
+    };
+    return [...tmhmMoveKeys].sort((a, b) => {
+      const rankA = rank(a);
+      const rankB = rank(b);
+      if (rankA.group !== rankB.group) return rankA.group - rankB.group;
+      return rankA.num - rankB.num;
+    });
+  }, [tmhmMoveKeys, tmhmNumberByMoveKey]);
+
   const tutorMoveKeys = useMemo(
     () => tutorMoveSlugs.map((slug) => moveKeyBySlug.get(slug)).filter((key): key is string => Boolean(key)),
     [tutorMoveSlugs, moveKeyBySlug],
@@ -1487,7 +1503,7 @@ function App() {
                       {selectedDetails.types.map((type) => (
                         <span
                           key={type}
-                          className="type-chip"
+                          className="type-chip type-chip-lg"
                           style={{ background: getTypeColor(type), color: getTypeTextColor(type) }}
                         >
                           {getDisplayToken(type)}
@@ -1579,11 +1595,11 @@ function App() {
                     )}
                   </div>
                   {selectedCaughtProfiles.length > 0 ? (
-                    <div className="build-list">
+                    <div className="caught-list">
                       {selectedCaughtProfiles.map((profile, index) => (
-                        <div key={profile.id} className="build-card">
-                          <div className="build-card-header">
-                            <strong>Caught #{index + 1}</strong>
+                        <div key={profile.id} className="caught-card">
+                          <div className="caught-card-header">
+                            <span className="caught-card-title">Caught #{index + 1}</span>
                             <div className="modal-actions">
                               <button type="button" className="status-pill" onClick={() => openCaughtModalForEdit(profile)}>
                                 Update
@@ -1608,57 +1624,77 @@ function App() {
                               </button>
                             </div>
                           </div>
-                          <p>
-                            <strong>Current Species:</strong>{" "}
-                            {entries.find((entry) => entry.id === profile.currentSpecies)?.displayName
-                              ?? getDisplayToken(profile.currentSpecies.replace("SPECIES_", ""))}
-                          </p>
-                          <p><strong>Level:</strong> {profile.level}</p>
-                          <p><strong>Nature:</strong> {formatNatureLabel(profile.nature)}</p>
-                          <p>
-                            <strong>Ability:</strong>{" "}
-                            {profile.ability ? (
-                              (() => {
-                                const info = dataset?.abilities[profile.ability];
-                                return (
-                                  <span
-                                    className="tag-button"
-                                    onMouseEnter={(e) => info && popShow(e, { kind: "ability", info })}
-                                    onMouseMove={popMove}
-                                    onMouseLeave={popHide}
-                                  >
-                                    {info?.name ?? getDisplayToken(profile.ability)}
-                                  </span>
-                                );
-                              })()
-                            ) : "—"}
-                          </p>
-                          <p>
-                            <strong>Item:</strong>{" "}
-                            {profile.item ? (
-                              (() => {
-                                const info = dataset?.items[profile.item];
-                                return (
-                                  <span
-                                    className="tag-button"
-                                    onMouseEnter={(e) => info && popShow(e, { kind: "item", info })}
-                                    onMouseMove={popMove}
-                                    onMouseLeave={popHide}
-                                  >
-                                    {info?.name ?? getDisplayToken(profile.item)}
-                                  </span>
-                                );
-                              })()
-                            ) : "—"}
-                          </p>
-                          <p>
-                            <strong>EVs ({sumSpread(profile.evs)}/510):</strong>{" "}
-                            {BUILD_STATS.map((stat) => `${stat.label} ${profile.evs[stat.key]}`).join(" · ")}
-                          </p>
-                          <p>
-                            <strong>IVs:</strong>{" "}
-                            {BUILD_STATS.map((stat) => `${stat.label} ${profile.ivs[stat.key]}`).join(" · ")}
-                          </p>
+
+                          <div className="caught-badges">
+                            <div className="caught-badge">
+                              <span className="caught-badge-label">Species</span>
+                              <span className="caught-badge-value">
+                                {entries.find((entry) => entry.id === profile.currentSpecies)?.displayName
+                                  ?? getDisplayToken(profile.currentSpecies.replace("SPECIES_", ""))}
+                              </span>
+                            </div>
+                            <div className="caught-badge">
+                              <span className="caught-badge-label">Level</span>
+                              <span className="caught-badge-value">{profile.level}</span>
+                            </div>
+                            <div className="caught-badge">
+                              <span className="caught-badge-label">Nature</span>
+                              <span className="caught-badge-value">{formatNatureLabel(profile.nature)}</span>
+                            </div>
+                            <div className="caught-badge">
+                              <span className="caught-badge-label">Ability</span>
+                              <span className="caught-badge-value">
+                                {profile.ability ? (
+                                  (() => {
+                                    const info = dataset?.abilities[profile.ability];
+                                    return (
+                                      <span
+                                        className="tag-button"
+                                        onMouseEnter={(e) => info && popShow(e, { kind: "ability", info })}
+                                        onMouseMove={popMove}
+                                        onMouseLeave={popHide}
+                                      >
+                                        {info?.name ?? getDisplayToken(profile.ability)}
+                                      </span>
+                                    );
+                                  })()
+                                ) : "—"}
+                              </span>
+                            </div>
+                            <div className="caught-badge">
+                              <span className="caught-badge-label">Held Item</span>
+                              <span className="caught-badge-value">
+                                {profile.item ? (
+                                  (() => {
+                                    const info = dataset?.items[profile.item];
+                                    return (
+                                      <span
+                                        className="tag-button"
+                                        onMouseEnter={(e) => info && popShow(e, { kind: "item", info })}
+                                        onMouseMove={popMove}
+                                        onMouseLeave={popHide}
+                                      >
+                                        {info?.name ?? getDisplayToken(profile.item)}
+                                      </span>
+                                    );
+                                  })()
+                                ) : "—"}
+                              </span>
+                            </div>
+                            <div className="caught-badge">
+                              <span className="caught-badge-label">EVs ({sumSpread(profile.evs)}/510)</span>
+                              <span className="caught-badge-value caught-spread-value">
+                                {BUILD_STATS.map((stat) => `${stat.label} ${profile.evs[stat.key]}`).join(" · ")}
+                              </span>
+                            </div>
+                            <div className="caught-badge">
+                              <span className="caught-badge-label">IVs</span>
+                              <span className="caught-badge-value caught-spread-value">
+                                {BUILD_STATS.map((stat) => `${stat.label} ${profile.ivs[stat.key]}`).join(" · ")}
+                              </span>
+                            </div>
+                          </div>
+
                           {(() => {
                             if (!selectedDetails) return null;
                             const nature = NATURE_BY_NAME.get(profile.nature);
@@ -1671,32 +1707,36 @@ function App() {
                               natureModifiers
                             );
                             return (
-                              <div className="stats-grid">
-                                {[
-                                  ["HP", calculatedStats.hp],
-                                  ["Atk", calculatedStats.attack],
-                                  ["Def", calculatedStats.defense],
-                                  ["SpA", calculatedStats.spAttack],
-                                  ["SpD", calculatedStats.spDefense],
-                                  ["Spe", calculatedStats.speed],
-                                  ["Total", calculatedStats.total],
-                                ].map(([label, value]) => (
-                                  <div key={label} className="stat-row">
-                                    <span className="stat-label">{label}</span>
-                                    <span className="stat-bar-wrap">
-                                      <span
-                                        className="stat-bar"
-                                        style={{ width: `${Math.min(100, Math.round((Number(value) / 255) * 100))}%` }}
-                                      />
-                                    </span>
-                                    <span className="stat-value">{value}</span>
-                                  </div>
-                                ))}
+                              <div className="caught-stats-block">
+                                <span className="caught-badge-label">Calculated Stats</span>
+                                <div className="stats-grid">
+                                  {[
+                                    ["HP", calculatedStats.hp],
+                                    ["Atk", calculatedStats.attack],
+                                    ["Def", calculatedStats.defense],
+                                    ["SpA", calculatedStats.spAttack],
+                                    ["SpD", calculatedStats.spDefense],
+                                    ["Spe", calculatedStats.speed],
+                                    ["Total", calculatedStats.total],
+                                  ].map(([label, value]) => (
+                                    <div key={label} className="stat-row">
+                                      <span className="stat-label">{label}</span>
+                                      <span className="stat-bar-wrap">
+                                        <span
+                                          className="stat-bar"
+                                          style={{ width: `${Math.min(100, Math.round((Number(value) / 255) * 100))}%` }}
+                                        />
+                                      </span>
+                                      <span className="stat-value">{value}</span>
+                                    </div>
+                                  ))}
+                                </div>
                               </div>
                             );
                           })()}
-                          <p>
-                            <strong>Moves:</strong>{" "}
+
+                          <div className="caught-moves-block">
+                            <span className="caught-badge-label">Moves</span>
                             <span className="tag-wrap">
                               {profile.moveset.map((moveKey) => {
                                 const info = dataset?.moves[moveKey];
@@ -1713,7 +1753,7 @@ function App() {
                                 );
                               })}
                             </span>
-                          </p>
+                          </div>
                         </div>
                       ))}
                     </div>
@@ -1841,9 +1881,9 @@ function App() {
                   </div>
                   {movesetLoading ? (
                     <p className="muted">Loading TM/HM moves…</p>
-                  ) : tmhmMoveKeys.length > 0 ? (
+                  ) : sortedTmhmMoveKeys.length > 0 ? (
                     <MovesTable
-                      moves={tmhmMoveKeys.map((move) => ({ learn: { move, level: -1 }, info: dataset?.moves[move] }))}
+                      moves={sortedTmhmMoveKeys.map((move) => ({ learn: { move, level: -1 }, info: dataset?.moves[move] }))}
                       dataset={dataset}
                       onShow={(e, key) => { const info = dataset?.moves[key]; if (info) popShow(e, { kind: "move", info }); }}
                       onMove={popMove}
