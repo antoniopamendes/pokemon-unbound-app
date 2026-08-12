@@ -1434,23 +1434,6 @@ function App() {
                   <div>
                     <div className="details-title-row">
                       <h2>{selectedEntry.displayName}</h2>
-                      {(selectedSpecies && (caughtCountBySpecies[selectedSpecies] ?? 0) > 0) ? (
-                        <button
-                          type="button"
-                          className="status-pill"
-                          onClick={() => selectedSpecies && openCaughtModal(selectedSpecies)}
-                        >
-                          Catch another
-                        </button>
-                      ) : (
-                        <button
-                          type="button"
-                          className="status-pill"
-                          onClick={() => selectedSpecies && openCaughtModal(selectedSpecies)}
-                        >
-                          Mark as caught
-                        </button>
-                      )}
                     </div>
                     <div className="type-chips">
                       {selectedDetails.types.map((type) => (
@@ -1474,7 +1457,26 @@ function App() {
                 </header>
 
                 <section className="details-section">
-                  <h3>Caught Pokémon</h3>
+                  <div className="details-section-header">
+                    <h3>Caught Pokémon</h3>
+                    {(selectedSpecies && (caughtCountBySpecies[selectedSpecies] ?? 0) > 0) ? (
+                      <button
+                        type="button"
+                        className="status-pill"
+                        onClick={() => selectedSpecies && openCaughtModal(selectedSpecies)}
+                      >
+                        Catch another
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        className="status-pill"
+                        onClick={() => selectedSpecies && openCaughtModal(selectedSpecies)}
+                      >
+                        Mark as caught
+                      </button>
+                    )}
+                  </div>
                   {selectedCaughtProfiles.length > 0 ? (
                     <div className="build-list">
                       {selectedCaughtProfiles.map((profile, index) => (
@@ -1617,6 +1619,21 @@ function App() {
                   ) : (
                     <p className="muted">This Pokémon is not marked as caught.</p>
                   )}
+
+                  <div className="catch-locations-subsection">
+                    <h4>Catch Locations</h4>
+                    {selectedDetails.locations.length > 0 ? (
+                      <div className="stack-list">
+                        {selectedDetails.locations.map((location) => (
+                          <p key={`${location.mapName}-${location.method}`}>
+                            {location.mapName} · {location.method} · Lv {location.minLevel}-{location.maxLevel}
+                          </p>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="muted">No encounter location found in loaded source.</p>
+                    )}
+                  </div>
                 </section>
 
                 <section className="details-section">
@@ -1935,21 +1952,6 @@ function App() {
                     </div>
                   ) : (
                     <p className="muted">No builds saved for this Pokémon yet.</p>
-                  )}
-                </section>
-
-                <section className="details-section">
-                  <h3>Catch Locations</h3>
-                  {selectedDetails.locations.length > 0 ? (
-                    <div className="stack-list">
-                      {selectedDetails.locations.map((location) => (
-                        <p key={`${location.mapName}-${location.method}`}>
-                          {location.mapName} · {location.method} · Lv {location.minLevel}-{location.maxLevel}
-                        </p>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="muted">No encounter location found in loaded source.</p>
                   )}
                 </section>
 

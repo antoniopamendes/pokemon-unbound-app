@@ -415,6 +415,32 @@ body {
   font-size: 1rem;
 }
 
+.details-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.details-section-header h3 {
+  margin: 0;
+}
+
+.catch-locations-subsection {
+  margin-top: 1rem;
+  padding-top: 0.9rem;
+  border-top: 1px dashed #eef3f8;
+}
+
+.catch-locations-subsection h4 {
+  margin: 0 0 0.45rem;
+  font-size: 0.9rem;
+  color: #355066;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
 .details-section p {
   margin: 0.45rem 0 0;
 }
