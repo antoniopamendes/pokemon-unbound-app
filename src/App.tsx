@@ -29,6 +29,7 @@ import type {
   MoveInfo,
   PokemonBuild,
   PokemonEntry,
+  PokemonStats,
   StatSpread,
   UnboundDataset,
 } from "./types";
@@ -480,6 +481,7 @@ function App() {
     speed: { min: 0, max: 255 },
   });
   const [selectedImageSrc, setSelectedImageSrc] = useState<string>("");
+  const [baseStatsPreviewNature, setBaseStatsPreviewNature] = useState<string>(NATURES[0].name);
   const [buildName, setBuildName] = useState<string>("");
   const [buildNature, setBuildNature] = useState<string>(NATURES[0].name);
   const [buildAbility, setBuildAbility] = useState<string>("");
@@ -619,6 +621,10 @@ function App() {
     return () => {
       active = false;
     };
+  }, [selectedSpecies]);
+
+  useEffect(() => {
+    setBaseStatsPreviewNature(NATURES[0].name);
   }, [selectedSpecies]);
 
   useEffect(() => {
@@ -1446,6 +1452,44 @@ function App() {
                         </span>
                       ))}
                     </div>
+                    <div className="header-pill-row">
+                      <span className="header-pill-group-label">Abilities:</span>
+                      {selectedDetails.abilities.map((ability) => {
+                        const info = dataset?.abilities[ability];
+                        return (
+                          <span
+                            key={ability}
+                            className="tag-button"
+                            onMouseEnter={(e) => info && popShow(e, { kind: "ability", info })}
+                            onMouseMove={popMove}
+                            onMouseLeave={popHide}
+                          >
+                            {info?.name ?? getDisplayToken(ability)}
+                          </span>
+                        );
+                      })}
+                    </div>
+                    <div className="header-pill-row">
+                      <span className="header-pill-group-label">Held Items:</span>
+                      {selectedDetails.heldItems.length > 0 ? (
+                        selectedDetails.heldItems.map((item) => {
+                          const info = dataset?.items[item];
+                          return (
+                            <span
+                              key={item}
+                              className="tag-button"
+                              onMouseEnter={(e) => info && popShow(e, { kind: "item", info })}
+                              onMouseMove={popMove}
+                              onMouseLeave={popHide}
+                            >
+                              {info?.name ?? getDisplayToken(item)}
+                            </span>
+                          );
+                        })
+                      ) : (
+                        <span className="muted">None</span>
+                      )}
+                    </div>
                   </div>
                   {selectedImageSrc ? (
                     <img
@@ -1455,50 +1499,6 @@ function App() {
                     />
                   ) : null}
                 </header>
-
-                <section className="details-section">
-                  <h3>Abilities</h3>
-                  <div className="tag-wrap">
-                    {selectedDetails.abilities.map((ability) => {
-                      const info = dataset?.abilities[ability];
-                      return (
-                        <span
-                          key={ability}
-                          className="tag-button"
-                          onMouseEnter={(e) => info && popShow(e, { kind: "ability", info })}
-                          onMouseMove={popMove}
-                          onMouseLeave={popHide}
-                        >
-                          {info?.name ?? getDisplayToken(ability)}
-                        </span>
-                      );
-                    })}
-                  </div>
-                </section>
-
-                <section className="details-section">
-                  <h3>Held Items</h3>
-                  <div className="tag-wrap">
-                    {selectedDetails.heldItems.length > 0 ? (
-                      selectedDetails.heldItems.map((item) => {
-                        const info = dataset?.items[item];
-                        return (
-                          <span
-                            key={item}
-                            className="tag-button"
-                            onMouseEnter={(e) => info && popShow(e, { kind: "item", info })}
-                            onMouseMove={popMove}
-                            onMouseLeave={popHide}
-                          >
-                            {info?.name ?? getDisplayToken(item)}
-                          </span>
-                        );
-                      })
-                    ) : (
-                      <span className="muted">No held items listed.</span>
-                    )}
-                  </div>
-                </section>
 
                 <section className="details-section">
                   <div className="details-section-header">
@@ -1681,28 +1681,68 @@ function App() {
                 </section>
 
                 <section className="details-section">
-                  <h3>Base Stats</h3>
+                  <div className="details-section-header">
+                    <h3>Base Stats</h3>
+                    <label className="nature-select-label">
+                      Nature
+                      <select
+                        value={baseStatsPreviewNature}
+                        onChange={(event) => setBaseStatsPreviewNature(event.target.value)}
+                      >
+                        {NATURES.map((nature) => (
+                          <option key={nature.name} value={nature.name}>{formatNatureLabel(nature.name)}</option>
+                        ))}
+                      </select>
+                    </label>
+                  </div>
                   <div className="stats-grid">
-                    {[
-                      ["HP", selectedDetails.stats.hp],
-                      ["Atk", selectedDetails.stats.attack],
-                      ["Def", selectedDetails.stats.defense],
-                      ["SpA", selectedDetails.stats.spAttack],
-                      ["SpD", selectedDetails.stats.spDefense],
-                      ["Spe", selectedDetails.stats.speed],
-                      ["BST", selectedDetails.stats.total],
-                    ].map(([label, value]) => (
-                      <div key={label} className="stat-row">
-                        <span className="stat-label">{label}</span>
-                        <span className="stat-bar-wrap">
-                          <span
-                            className="stat-bar"
-                            style={{ width: `${Math.min(100, Math.round((Number(value) / 255) * 100))}%` }}
-                          />
-                        </span>
-                        <span className="stat-value">{value}</span>
-                      </div>
-                    ))}
+                    {(() => {
+                      const nature = NATURE_BY_NAME.get(baseStatsPreviewNature);
+                      const mods = getNatureModifiers(nature?.up ?? null, nature?.down ?? null);
+                      const adjustedStats: PokemonStats = {
+                        hp: selectedDetails.stats.hp,
+                        attack: Math.floor(selectedDetails.stats.attack * mods.attack),
+                        defense: Math.floor(selectedDetails.stats.defense * mods.defense),
+                        spAttack: Math.floor(selectedDetails.stats.spAttack * mods.spAttack),
+                        spDefense: Math.floor(selectedDetails.stats.spDefense * mods.spDefense),
+                        speed: Math.floor(selectedDetails.stats.speed * mods.speed),
+                        total: 0,
+                      };
+                      adjustedStats.total = adjustedStats.hp + adjustedStats.attack + adjustedStats.defense
+                        + adjustedStats.spAttack + adjustedStats.spDefense + adjustedStats.speed;
+
+                      const rows: [string, number, keyof StatSpread | null][] = [
+                        ["HP", adjustedStats.hp, "hp"],
+                        ["Atk", adjustedStats.attack, "attack"],
+                        ["Def", adjustedStats.defense, "defense"],
+                        ["SpA", adjustedStats.spAttack, "spAttack"],
+                        ["SpD", adjustedStats.spDefense, "spDefense"],
+                        ["Spe", adjustedStats.speed, "speed"],
+                        ["BST", adjustedStats.total, null],
+                      ];
+
+                      return rows.map(([label, value, statKey]) => {
+                        const isBoosted = statKey && nature?.up === statKey;
+                        const isReduced = statKey && nature?.down === statKey;
+                        return (
+                          <div key={label} className="stat-row">
+                            <span className={`stat-label ${isBoosted ? "stat-boosted" : ""} ${isReduced ? "stat-reduced" : ""}`}>
+                              {label}
+                              {isBoosted ? " ▲" : isReduced ? " ▼" : ""}
+                            </span>
+                            <span className="stat-bar-wrap">
+                              <span
+                                className="stat-bar"
+                                style={{ width: `${Math.min(100, Math.round((value / 255) * 100))}%` }}
+                              />
+                            </span>
+                            <span className={`stat-value ${isBoosted ? "stat-boosted" : ""} ${isReduced ? "stat-reduced" : ""}`}>
+                              {value}
+                            </span>
+                          </div>
+                        );
+                      });
+                    })()}
                   </div>
                 </section>
 
