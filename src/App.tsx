@@ -480,6 +480,18 @@ function App() {
   const navigate = useNavigate();
   const selectedSpecies = params.id ?? null;
   const goToSpecies = (id: string) => navigate(`/pokemon/${id}`);
+  const [collapsedSections, setCollapsedSections] = useState<Set<string>>(new Set());
+  const toggleSection = (id: string) => {
+    setCollapsedSections((current) => {
+      const next = new Set(current);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  };
   const [search, setSearch] = useState("");
   const [selectedTypes, setSelectedTypes] = useState<Set<string>>(new Set());
   const [caughtOnly, setCaughtOnly] = useState(false);
@@ -644,6 +656,7 @@ function App() {
 
   useEffect(() => {
     setBaseStatsPreviewNature(NATURES[0].name);
+    setCollapsedSections(new Set());
   }, [selectedSpecies]);
 
   useEffect(() => {
@@ -1541,9 +1554,12 @@ function App() {
                   ) : null}
                 </header>
 
-                <section className="details-section">
+                <section className={`details-section ${collapsedSections.has("caught") ? "collapsed" : ""}`}>
                   <div className="details-section-header">
-                    <h3>Caught Pokémon</h3>
+                    <button type="button" className="section-toggle" onClick={() => toggleSection("caught")}>
+                      <span className={`chevron ${collapsedSections.has("caught") ? "collapsed" : ""}`}>▾</span>
+                      <h3>Caught Pokémon</h3>
+                    </button>
                     {(selectedSpecies && (caughtCountBySpecies[selectedSpecies] ?? 0) > 0) ? (
                       <button
                         type="button"
@@ -1706,9 +1722,12 @@ function App() {
                   )}
                 </section>
 
-                <section className="details-section">
+                <section className={`details-section ${collapsedSections.has("base-stats") ? "collapsed" : ""}`}>
                   <div className="details-section-header">
-                    <h3>Base Stats</h3>
+                    <button type="button" className="section-toggle" onClick={() => toggleSection("base-stats")}>
+                      <span className={`chevron ${collapsedSections.has("base-stats") ? "collapsed" : ""}`}>▾</span>
+                      <h3>Base Stats</h3>
+                    </button>
                     <label className="nature-select-label">
                       Nature
                       <select
@@ -1772,8 +1791,13 @@ function App() {
                   </div>
                 </section>
 
-                <section className="details-section">
-                  <h3>Evolution Chain</h3>
+                <section className={`details-section ${collapsedSections.has("evolution") ? "collapsed" : ""}`}>
+                  <div className="details-section-header">
+                    <button type="button" className="section-toggle" onClick={() => toggleSection("evolution")}>
+                      <span className={`chevron ${collapsedSections.has("evolution") ? "collapsed" : ""}`}>▾</span>
+                      <h3>Evolution Chain</h3>
+                    </button>
+                  </div>
                   {selectedDetails.evolutions == null || selectedDetails.evolutions.children.length === 0 ? (
                     <p className="muted">Does not evolve.</p>
                   ) : (
@@ -1788,8 +1812,13 @@ function App() {
                   )}
                 </section>
 
-                <section className="details-section">
-                  <h3>Moves (Level-up)</h3>
+                <section className={`details-section ${collapsedSections.has("moves-levelup") ? "collapsed" : ""}`}>
+                  <div className="details-section-header">
+                    <button type="button" className="section-toggle" onClick={() => toggleSection("moves-levelup")}>
+                      <span className={`chevron ${collapsedSections.has("moves-levelup") ? "collapsed" : ""}`}>▾</span>
+                      <h3>Moves (Level-up)</h3>
+                    </button>
+                  </div>
                   {selectedDetails.levelUpMoves.length > 0 ? (
                     <MovesTable
                       moves={selectedDetails.levelUpMoves.map((learn) => ({ learn, info: dataset?.moves[learn.move] }))}
@@ -1803,8 +1832,13 @@ function App() {
                   )}
                 </section>
 
-                <section className="details-section">
-                  <h3>Moves (TM/HM)</h3>
+                <section className={`details-section ${collapsedSections.has("moves-tmhm") ? "collapsed" : ""}`}>
+                  <div className="details-section-header">
+                    <button type="button" className="section-toggle" onClick={() => toggleSection("moves-tmhm")}>
+                      <span className={`chevron ${collapsedSections.has("moves-tmhm") ? "collapsed" : ""}`}>▾</span>
+                      <h3>Moves (TM/HM)</h3>
+                    </button>
+                  </div>
                   {movesetLoading ? (
                     <p className="muted">Loading TM/HM moves…</p>
                   ) : tmhmMoveKeys.length > 0 ? (
@@ -1824,8 +1858,13 @@ function App() {
                   )}
                 </section>
 
-                <section className="details-section">
-                  <h3>Moves (Tutor)</h3>
+                <section className={`details-section ${collapsedSections.has("moves-tutor") ? "collapsed" : ""}`}>
+                  <div className="details-section-header">
+                    <button type="button" className="section-toggle" onClick={() => toggleSection("moves-tutor")}>
+                      <span className={`chevron ${collapsedSections.has("moves-tutor") ? "collapsed" : ""}`}>▾</span>
+                      <h3>Moves (Tutor)</h3>
+                    </button>
+                  </div>
                   {movesetLoading ? (
                     <p className="muted">Loading tutor moves…</p>
                   ) : tutorMoveKeys.length > 0 ? (
@@ -1842,8 +1881,13 @@ function App() {
                   )}
                 </section>
 
-                <section className="details-section">
-                  <h3>Moves (Egg)</h3>
+                <section className={`details-section ${collapsedSections.has("moves-egg") ? "collapsed" : ""}`}>
+                  <div className="details-section-header">
+                    <button type="button" className="section-toggle" onClick={() => toggleSection("moves-egg")}>
+                      <span className={`chevron ${collapsedSections.has("moves-egg") ? "collapsed" : ""}`}>▾</span>
+                      <h3>Moves (Egg)</h3>
+                    </button>
+                  </div>
                   {selectedDetails.eggMoves?.length > 0 ? (
                     <MovesTable
                       moves={selectedDetails.eggMoves.map((move) => ({ learn: { move, level: -1 }, info: dataset?.moves[move] }))}
@@ -1858,8 +1902,13 @@ function App() {
                   )}
                 </section>
 
-                <section className="details-section">
-                  <h3>Builds</h3>
+                <section className={`details-section ${collapsedSections.has("builds") ? "collapsed" : ""}`}>
+                  <div className="details-section-header">
+                    <button type="button" className="section-toggle" onClick={() => toggleSection("builds")}>
+                      <span className={`chevron ${collapsedSections.has("builds") ? "collapsed" : ""}`}>▾</span>
+                      <h3>Builds</h3>
+                    </button>
+                  </div>
                   <p className="muted">EVs: 0-252 each (max total 510) · IVs: 0-31 each · Natures: all 25.</p>
 
                   <div className="build-editor">

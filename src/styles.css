@@ -526,6 +526,44 @@ button.btn-danger:hover {
   border-bottom: 0;
 }
 
+.details-section.collapsed > *:not(:first-child) {
+  display: none;
+}
+
+.section-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: transparent;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  text-align: left;
+}
+
+.section-toggle:hover {
+  background: transparent;
+  border-color: transparent;
+}
+
+.section-toggle h3 {
+  margin: 0;
+  padding-bottom: 0;
+  border-bottom: 0;
+}
+
+.chevron {
+  display: inline-block;
+  font-size: 0.7rem;
+  color: #6b8093;
+  transition: transform 0.2s ease;
+  flex-shrink: 0;
+}
+
+.chevron.collapsed {
+  transform: rotate(-90deg);
+}
+
 .location-chip {
   border: 1px solid #cad8e6;
   border-radius: 8px;
@@ -613,8 +651,8 @@ button.btn-danger:hover {
 /* ---- Type chips ---- */
 .type-chip {
   display: inline-block;
-  padding: 0.1rem 0.4rem;
-  border-radius: 999px;
+  padding: 0.1rem 0.45rem;
+  border-radius: 5px;
   font-size: 0.68rem;
   font-weight: 600;
   letter-spacing: 0.02em;
