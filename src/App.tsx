@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { Dispatch, SetStateAction } from "react";
 import { createPortal } from "react-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { fetchImageObjectUrlWithPersistentCache } from "./httpCache";
 import { fetchUnboundPokedex } from "./pokedex";
 import {
@@ -261,7 +262,17 @@ async function resolveSpriteObjectUrl(speciesKey: string, fallbackUrl: string): 
 }
 
 // ---- Sprite image with async fetch ----
-function SpriteImage({ speciesKey, fallbackUrl, alt }: { speciesKey: string; fallbackUrl: string; alt: string }) {
+function SpriteImage({
+  speciesKey,
+  fallbackUrl,
+  alt,
+  className = "evo-sprite",
+}: {
+  speciesKey: string;
+  fallbackUrl: string;
+  alt: string;
+  className?: string;
+}) {
   const [src, setSrc] = useState("");
 
   useEffect(() => {
@@ -277,8 +288,8 @@ function SpriteImage({ speciesKey, fallbackUrl, alt }: { speciesKey: string; fal
   }, [speciesKey, fallbackUrl]);
 
   return src
-    ? <img src={src} alt={alt} className="evo-sprite" />
-    : <div className="evo-sprite" />;
+    ? <img src={src} alt={alt} className={className} loading="lazy" />
+    : <div className={className} />;
 }
 
 // ---- Evolution tree renderer ----
@@ -345,6 +356,9 @@ function EvoTree({
     </div>
   );
 }
+
+// Number of Pokémon cards rendered per page; more load in as the user scrolls near the bottom.
+const GRID_PAGE_SIZE = 48;
 
 const BUILD_STATS: Array<{ key: keyof StatSpread; label: string }> = [
   { key: "hp", label: "HP" },
@@ -446,10 +460,15 @@ function App() {
   const [buildMap, setBuildMap] = useState<BuildMap>(() =>
     loadBuildMap(),
   );
-  const [selectedSpecies, setSelectedSpecies] = useState<string | null>(null);
+  const params = useParams<{ id?: string }>();
+  const navigate = useNavigate();
+  const selectedSpecies = params.id ?? null;
+  const goToSpecies = (id: string) => navigate(`/pokemon/${id}`);
   const [search, setSearch] = useState("");
   const [selectedTypes, setSelectedTypes] = useState<Set<string>>(new Set());
   const [caughtOnly, setCaughtOnly] = useState(false);
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
+  const [showFilters, setShowFilters] = useState(false);
   const [minBaseStat, setMinBaseStat] = useState<number>(0);
   const [maxBaseStat, setMaxBaseStat] = useState<number>(800);
   const [statFilters, setStatFilters] = useState<Record<keyof StatSpread, { min: number; max: number }>>({
@@ -518,7 +537,6 @@ function App() {
       try {
         const loadedDataset = await getUnboundDataset(entries);
         setDataset(loadedDataset);
-        setSelectedSpecies((current) => current ?? entries[0]?.id ?? null);
       } catch (datasetError) {
         if (datasetError instanceof Error) {
           setError(datasetError.message);
@@ -682,6 +700,36 @@ function App() {
     });
   }, [entries, search, caughtOnly, caughtCountBySpecies, selectedTypes, dataset, minBaseStat, maxBaseStat, statFilters]);
 
+  const [visibleCount, setVisibleCount] = useState(GRID_PAGE_SIZE);
+  const loadMoreRef = useRef<HTMLDivElement | null>(null);
+
+  // Reset pagination whenever the filtered results change (e.g. new search/filter).
+  useEffect(() => {
+    setVisibleCount(GRID_PAGE_SIZE);
+  }, [filteredEntries]);
+
+  useEffect(() => {
+    const sentinel = loadMoreRef.current;
+    if (!sentinel) {
+      return;
+    }
+    const observer = new IntersectionObserver(
+      (observerEntries) => {
+        if (observerEntries.some((observerEntry) => observerEntry.isIntersecting)) {
+          setVisibleCount((current) => Math.min(current + GRID_PAGE_SIZE, filteredEntries.length));
+        }
+      },
+      { rootMargin: "400px" },
+    );
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [loadMoreRef, filteredEntries.length]);
+
+  const visibleEntries = useMemo(
+    () => filteredEntries.slice(0, visibleCount),
+    [filteredEntries, visibleCount],
+  );
+
   const caughtCount = useMemo(
     () => entries.filter((entry) => (caughtCountBySpecies[entry.id] ?? 0) > 0).length,
     [entries, caughtCountBySpecies],
@@ -810,7 +858,6 @@ function App() {
   };
 
   const toggleCaught = (id: string) => {
-    setSelectedSpecies(id);
     openCaughtModal(id);
   };
 
@@ -1148,6 +1195,8 @@ function App() {
           <p className="subtitle">Simple Pokedex companion with cached Unbound data.</p>
         </header>
 
+        {!selectedSpecies && (
+          <>
         <section className="progress-card">
           <strong>
             Progress: {caughtCount}/{totalCount} ({progressPercentage}%)
@@ -1155,8 +1204,8 @@ function App() {
         </section>
 
         <section className="controls">
-          <div className="controls-row">
-            <label htmlFor="search-input">
+          <div className="controls-top-row">
+            <label htmlFor="search-input" className="search-field">
               Search
               <input
                 id="search-input"
@@ -1166,171 +1215,219 @@ function App() {
                 placeholder="Pikachu..."
               />
             </label>
-          </div>
-
-          <div className="controls-divider" />
-
-          <div className="controls-type-section">
-            <h4>Types</h4>
-            <div className="type-buttons-grid">
-              {availableTypeFilters.map((type) => {
-                const isSelected = selectedTypes.has(type);
-                return (
-                  <button
-                    key={type}
-                    className={`type-filter-btn ${isSelected ? "selected" : ""}`}
-                    style={{
-                      background: isSelected ? getTypeColor(type) : "transparent",
-                      color: isSelected ? getTypeTextColor(type) : "#355066",
-                      borderColor: getTypeColor(type),
-                    }}
-                    onClick={() => {
-                      const next = new Set(selectedTypes);
-                      if (next.has(type)) {
-                        next.delete(type);
-                      } else {
-                        next.add(type);
-                      }
-                      setSelectedTypes(next);
-                    }}
-                  >
-                    {getDisplayToken(type)}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          <div className="controls-caught-section">
             <button
               className={`caught-toggle-btn ${caughtOnly ? "active" : ""}`}
               onClick={() => setCaughtOnly(!caughtOnly)}
             >
               {caughtOnly ? "✓ " : ""}Show only caught
             </button>
+            <button
+              type="button"
+              className="filters-toggle-btn"
+              onClick={() => setShowFilters((current) => !current)}
+              aria-expanded={showFilters}
+            >
+              {showFilters ? "▾ Hide filters" : "▸ Show filters"}
+            </button>
           </div>
 
-          <div className="controls-divider" />
+          {showFilters ? (
+            <>
+              <div className="controls-divider" />
 
-          <div className="controls-stats-section">
-            <h4>Base Stat Filters</h4>
-            <div className="stat-filters-grid">
-              <div className="stat-filter-container">
-                <label className="stat-filter-label">Total</label>
-                <div className="stat-values-group">
-                  <input
-                    id="min-stat-input"
-                    type="number"
-                    min={0}
-                    max={800}
-                    value={minBaseStat}
-                    className="stat-value-input"
-                    placeholder="Min"
-                    onChange={(event) => {
-                      const value = Number.parseInt(event.target.value, 10);
-                      setMinBaseStat(Number.isNaN(value) ? 0 : Math.max(0, Math.min(800, value)));
-                    }}
-                  />
-                  <span className="stat-value-separator">–</span>
-                  <input
-                    type="number"
-                    min={0}
-                    max={800}
-                    value={maxBaseStat}
-                    className="stat-value-input"
-                    placeholder="Max"
-                    onChange={(event) => {
-                      const value = Number.parseInt(event.target.value, 10);
-                      setMaxBaseStat(Number.isNaN(value) ? 800 : Math.max(0, Math.min(800, value)));
-                    }}
-                  />
-                </div>
-              </div>
-
-              {BUILD_STATS.map((stat) => (
-                <div key={stat.key} className="stat-filter-container">
-                  <label className="stat-filter-label">{stat.label}</label>
-                  <div className="stat-values-group">
-                    <input
-                      type="number"
-                      min={0}
-                      max={255}
-                      value={statFilters[stat.key].min}
-                      className="stat-value-input"
-                      onChange={(event) => {
-                        const value = Number.parseInt(event.target.value, 10);
-                        const min = Number.isNaN(value) ? 0 : Math.max(0, Math.min(255, value));
-                        setStatFilters((current) => ({
-                          ...current,
-                          [stat.key]: { ...current[stat.key], min },
-                        }));
-                      }}
-                    />
-                    <span className="stat-value-separator">–</span>
-                    <input
-                      type="number"
-                      min={0}
-                      max={255}
-                      value={statFilters[stat.key].max}
-                      className="stat-value-input"
-                      onChange={(event) => {
-                        const value = Number.parseInt(event.target.value, 10);
-                        const max = Number.isNaN(value) ? 255 : Math.max(0, Math.min(255, value));
-                        setStatFilters((current) => ({
-                          ...current,
-                          [stat.key]: { ...current[stat.key], max },
-                        }));
-                      }}
-                    />
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        <section className="layout-grid">
-          <section className="pokedex-list">
-            {filteredEntries.map((entry) => {
-              const caughtCountForSpecies = caughtCountBySpecies[entry.id] ?? 0;
-              const isCaught = caughtCountForSpecies > 0;
-              const isSelected = selectedSpecies === entry.id;
-              const rowTypes = dataset?.pokemon[entry.id]?.types ?? [];
-              return (
-                <article
-                  key={entry.id}
-                  className={`pokemon-row ${isCaught ? "caught" : ""} ${isSelected ? "selected" : ""}`}
-                  onClick={() => setSelectedSpecies(entry.id)}
-                >
-                  <span className="dex-order">#{entry.dexOrder}</span>
-                  <div className="pokemon-main">
-                    <span className="pokemon-name">{entry.displayName}</span>
-                    <div className="pokemon-row-types">
-                      {rowTypes.map((type) => (
-                        <span
-                          key={`${entry.id}-${type}`}
-                          className="type-chip"
-                          style={{ background: getTypeColor(type), color: getTypeTextColor(type) }}
-                        >
-                          {getDisplayToken(type)}
-                        </span>
-                      ))}
+              <div className="controls-columns">
+                <div className="controls-column">
+                  <div className="controls-type-section">
+                    <h4>Types</h4>
+                    <div className="type-buttons-grid">
+                      {availableTypeFilters.map((type) => {
+                        const isSelected = selectedTypes.has(type);
+                        return (
+                          <button
+                            key={type}
+                            className={`type-filter-btn ${isSelected ? "selected" : ""}`}
+                            style={{
+                              background: isSelected ? getTypeColor(type) : "transparent",
+                              color: isSelected ? getTypeTextColor(type) : "#355066",
+                              borderColor: getTypeColor(type),
+                            }}
+                            onClick={() => {
+                              const next = new Set(selectedTypes);
+                              if (next.has(type)) {
+                                next.delete(type);
+                              } else {
+                                next.add(type);
+                              }
+                              setSelectedTypes(next);
+                            }}
+                          >
+                            {getDisplayToken(type)}
+                          </button>
+                        );
+                      })}
                     </div>
                   </div>
-                  <button
-                    type="button"
-                    className="status-pill"
-                    onClick={(e) => { e.stopPropagation(); toggleCaught(entry.id); }}
-                    aria-pressed={isCaught}
-                  >
-                    {isCaught ? `Caught x${caughtCountForSpecies}` : "Catch"}
-                  </button>
-                </article>
-              );
-            })}
-          </section>
+                </div>
 
-          <section className="details-panel">
+                <div className="controls-column">
+                  <div className="controls-stats-section">
+                    <h4>Stat Filters</h4>
+                    <div className="stat-filter-container stat-filter-bst">
+                      <div className="stat-filter-header">
+                        <label className="stat-filter-label">Base Stat Total</label>
+                        <div className="stat-values-group">
+                          <input
+                            type="number"
+                            min={0}
+                            max={800}
+                            value={minBaseStat}
+                            className="stat-value-input"
+                            onChange={(event) => {
+                              const value = Number.parseInt(event.target.value, 10);
+                              const safe = Number.isNaN(value) ? 0 : Math.max(0, Math.min(800, value));
+                              setMinBaseStat(Math.min(safe, maxBaseStat));
+                            }}
+                          />
+                          <span className="stat-value-separator">–</span>
+                          <input
+                            type="number"
+                            min={0}
+                            max={800}
+                            value={maxBaseStat}
+                            className="stat-value-input"
+                            onChange={(event) => {
+                              const value = Number.parseInt(event.target.value, 10);
+                              const safe = Number.isNaN(value) ? 800 : Math.max(0, Math.min(800, value));
+                              setMaxBaseStat(Math.max(safe, minBaseStat));
+                            }}
+                          />
+                        </div>
+                      </div>
+                      <div className="range-slider-group">
+                        <span className="range-slider-track" />
+                        <input
+                          id="min-stat-input"
+                          type="range"
+                          min={0}
+                          max={800}
+                          step={5}
+                          value={minBaseStat}
+                          className="range-slider"
+                          onChange={(event) => {
+                            const value = Number.parseInt(event.target.value, 10);
+                            setMinBaseStat(Math.min(value, maxBaseStat));
+                          }}
+                        />
+                        <input
+                          type="range"
+                          min={0}
+                          max={800}
+                          step={5}
+                          value={maxBaseStat}
+                          className="range-slider"
+                          onChange={(event) => {
+                            const value = Number.parseInt(event.target.value, 10);
+                            setMaxBaseStat(Math.max(value, minBaseStat));
+                          }}
+                        />
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      className="advanced-filters-toggle"
+                      onClick={() => setShowAdvancedFilters((current) => !current)}
+                    >
+                      {showAdvancedFilters ? "▾ Hide per-stat filters" : "▸ Show per-stat filters"}
+                    </button>
+
+                    {showAdvancedFilters ? (
+                      <div className="stat-filters-grid">
+                        {BUILD_STATS.map((stat) => (
+                          <div key={stat.key} className="stat-filter-container">
+                            <div className="stat-filter-header">
+                              <label className="stat-filter-label">{stat.label}</label>
+                              <div className="stat-values-group">
+                                <input
+                                  type="number"
+                                  min={0}
+                                  max={255}
+                                  value={statFilters[stat.key].min}
+                                  className="stat-value-input"
+                                  onChange={(event) => {
+                                    const value = Number.parseInt(event.target.value, 10);
+                                    const safe = Number.isNaN(value) ? 0 : Math.max(0, Math.min(255, value));
+                                    setStatFilters((current) => ({
+                                      ...current,
+                                      [stat.key]: { ...current[stat.key], min: Math.min(safe, current[stat.key].max) },
+                                    }));
+                                  }}
+                                />
+                                <span className="stat-value-separator">–</span>
+                                <input
+                                  type="number"
+                                  min={0}
+                                  max={255}
+                                  value={statFilters[stat.key].max}
+                                  className="stat-value-input"
+                                  onChange={(event) => {
+                                    const value = Number.parseInt(event.target.value, 10);
+                                    const safe = Number.isNaN(value) ? 255 : Math.max(0, Math.min(255, value));
+                                    setStatFilters((current) => ({
+                                      ...current,
+                                      [stat.key]: { ...current[stat.key], max: Math.max(safe, current[stat.key].min) },
+                                    }));
+                                  }}
+                                />
+                              </div>
+                            </div>
+                            <div className="range-slider-group">
+                              <span className="range-slider-track" />
+                              <input
+                                type="range"
+                                min={0}
+                                max={255}
+                                value={statFilters[stat.key].min}
+                                className="range-slider"
+                                onChange={(event) => {
+                                  const value = Number.parseInt(event.target.value, 10);
+                                  setStatFilters((current) => ({
+                                    ...current,
+                                    [stat.key]: { ...current[stat.key], min: Math.min(value, current[stat.key].max) },
+                                  }));
+                                }}
+                              />
+                              <input
+                                type="range"
+                                min={0}
+                                max={255}
+                                value={statFilters[stat.key].max}
+                                className="range-slider"
+                                onChange={(event) => {
+                                  const value = Number.parseInt(event.target.value, 10);
+                                  setStatFilters((current) => ({
+                                    ...current,
+                                    [stat.key]: { ...current[stat.key], max: Math.max(value, current[stat.key].min) },
+                                  }));
+                                }}
+                              />
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : null}
+                  </div>
+                </div>
+              </div>
+            </>
+          ) : null}
+        </section>
+          </>
+        )}
+
+        {selectedSpecies ? (
+          <section className="details-panel details-page">
+            <Link to="/" className="back-link">← Back to Pokédex</Link>
             {selectedDetails && selectedEntry ? (
               <>
                 <header className="details-header">
@@ -1345,7 +1442,15 @@ function App() {
                         >
                           Catch another
                         </button>
-                      ) : null}
+                      ) : (
+                        <button
+                          type="button"
+                          className="status-pill"
+                          onClick={() => selectedSpecies && openCaughtModal(selectedSpecies)}
+                        >
+                          Mark as caught
+                        </button>
+                      )}
                     </div>
                     <div className="type-chips">
                       {selectedDetails.types.map((type) => (
@@ -1594,7 +1699,7 @@ function App() {
                         node={selectedDetails.evolutions}
                         selectedSpecies={selectedSpecies}
                         dataset={dataset}
-                        onSelect={setSelectedSpecies}
+                        onSelect={goToSpecies}
                       />
                     </div>
                   )}
@@ -1850,10 +1955,99 @@ function App() {
 
               </>
             ) : (
-              <p className="muted">Select a Pokémon to view full details.</p>
+              <p className="muted">Pokémon not found.</p>
             )}
           </section>
-        </section>
+        ) : (
+          <section className="pokedex-grid">
+            {filteredEntries.length === 0 ? (
+              <p className="muted">No Pokémon match the current filters.</p>
+            ) : (
+              visibleEntries.map((entry) => {
+                const caughtCountForSpecies = caughtCountBySpecies[entry.id] ?? 0;
+                const isCaught = caughtCountForSpecies > 0;
+                const details = dataset?.pokemon[entry.id];
+                const cardTypes = details?.types ?? [];
+                const stats = details?.stats;
+                return (
+                  <Link
+                    key={entry.id}
+                    to={`/pokemon/${entry.id}`}
+                    className={`pokemon-card ${isCaught ? "caught" : ""}`}
+                  >
+                    <div className="pokemon-card-top">
+                      <span className="dex-order">#{entry.dexOrder}</span>
+                      <button
+                        type="button"
+                        className="status-pill"
+                        onClick={(event) => {
+                          event.preventDefault();
+                          event.stopPropagation();
+                          toggleCaught(entry.id);
+                        }}
+                        aria-pressed={isCaught}
+                      >
+                        {isCaught ? `Caught x${caughtCountForSpecies}` : "Catch"}
+                      </button>
+                    </div>
+                    <SpriteImage
+                      speciesKey={entry.id}
+                      fallbackUrl={details?.spriteUrl ?? ""}
+                      alt={entry.displayName}
+                      className="card-sprite"
+                    />
+                    <span className="pokemon-name">{entry.displayName}</span>
+                    <div className="pokemon-row-types">
+                      {cardTypes.map((type) => (
+                        <span
+                          key={`${entry.id}-${type}`}
+                          className="type-chip"
+                          style={{ background: getTypeColor(type), color: getTypeTextColor(type) }}
+                        >
+                          {getDisplayToken(type)}
+                        </span>
+                      ))}
+                    </div>
+                    {stats ? (
+                      <div className="card-stats">
+                        <div className="card-bst">
+                          BST <strong>{stats.total}</strong>
+                        </div>
+                        <div className="mini-stat-bars">
+                          {([
+                            ["HP", stats.hp],
+                            ["Atk", stats.attack],
+                            ["Def", stats.defense],
+                            ["SpA", stats.spAttack],
+                            ["SpD", stats.spDefense],
+                            ["Spe", stats.speed],
+                          ] as const).map(([label, value]) => (
+                            <div key={label} className="mini-stat-row">
+                              <span className="mini-stat-label">{label}</span>
+                              <span className="mini-stat-bar-wrap">
+                                <span
+                                  className="mini-stat-bar"
+                                  style={{ width: `${Math.min(100, Math.round((value / 180) * 100))}%` }}
+                                />
+                              </span>
+                              <span className="mini-stat-value">{value}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ) : null}
+                  </Link>
+                );
+              })
+            )}
+          </section>
+        )}
+
+        {!selectedSpecies && visibleCount < filteredEntries.length ? (
+          <div ref={loadMoreRef} className="grid-load-more">
+            <span className="muted">Loading more Pokémon…</span>
+          </div>
+        ) : null}
       </section>
 
       {caughtModalOpen ? (
