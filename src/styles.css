@@ -666,10 +666,10 @@ button.btn-danger:hover {
 }
 
 .type-chip-lg {
-  font-size: 0.95rem;
-  padding: 0.28rem 0.9rem;
+  font-size: 0.78rem;
+  padding: 0.18rem 0.6rem;
   border-radius: 6px;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.03em;
 }
 
 .type-chips {
@@ -835,7 +835,7 @@ button.btn-danger:hover {
 .build-spread-grid {
   margin-top: 0.3rem;
   display: grid;
-  grid-template-columns: repeat(3, minmax(70px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(70px, 1fr));
   gap: 0.45rem;
 }
 
@@ -844,6 +844,12 @@ button.btn-danger:hover {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
   gap: 0.5rem;
+}
+
+.caught-fields-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 0.6rem 0.75rem;
 }
 
 .build-field {

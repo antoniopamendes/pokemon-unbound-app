@@ -2224,72 +2224,74 @@ function App() {
             <h3>Configure Caught Pokémon</h3>
             <p className="muted">Set the current state of this caught Pokémon. You can update this later.</p>
 
-            <label className="build-field">
-              Current Species (evolution)
-              <select
-                value={caughtModalCurrentSpecies}
-                onChange={(event) => setCaughtModalCurrentSpecies(event.target.value)}
-              >
-                {caughtEvolutionSpeciesOptions.map((speciesKey) => (
-                  <option key={speciesKey} value={speciesKey}>
-                    {entries.find((entry) => entry.id === speciesKey)?.displayName
-                      ?? getDisplayToken(speciesKey.replace("SPECIES_", ""))}
-                  </option>
-                ))}
-              </select>
-            </label>
+            <div className="caught-fields-grid">
+              <label className="build-field">
+                Current Species (evolution)
+                <select
+                  value={caughtModalCurrentSpecies}
+                  onChange={(event) => setCaughtModalCurrentSpecies(event.target.value)}
+                >
+                  {caughtEvolutionSpeciesOptions.map((speciesKey) => (
+                    <option key={speciesKey} value={speciesKey}>
+                      {entries.find((entry) => entry.id === speciesKey)?.displayName
+                        ?? getDisplayToken(speciesKey.replace("SPECIES_", ""))}
+                    </option>
+                  ))}
+                </select>
+              </label>
 
-            <label className="build-field">
-              Level
-              <input
-                type="number"
-                min={1}
-                max={100}
-                value={caughtModalLevel}
-                onChange={(event) => {
-                  const value = Number.parseInt(event.target.value, 10);
-                  setCaughtModalLevel(Number.isNaN(value) ? 1 : Math.max(1, Math.min(100, value)));
-                }}
-              />
-            </label>
+              <label className="build-field">
+                Level
+                <input
+                  type="number"
+                  min={1}
+                  max={100}
+                  value={caughtModalLevel}
+                  onChange={(event) => {
+                    const value = Number.parseInt(event.target.value, 10);
+                    setCaughtModalLevel(Number.isNaN(value) ? 1 : Math.max(1, Math.min(100, value)));
+                  }}
+                />
+              </label>
 
-            <label className="build-field">
-              Nature
-              <select
-                value={caughtModalNature}
-                onChange={(event) => setCaughtModalNature(event.target.value)}
-              >
-                {NATURES.map((nature) => (
-                  <option key={nature.name} value={nature.name}>{formatNatureLabel(nature.name)}</option>
-                ))}
-              </select>
-            </label>
+              <label className="build-field">
+                Nature
+                <select
+                  value={caughtModalNature}
+                  onChange={(event) => setCaughtModalNature(event.target.value)}
+                >
+                  {NATURES.map((nature) => (
+                    <option key={nature.name} value={nature.name}>{formatNatureLabel(nature.name)}</option>
+                  ))}
+                </select>
+              </label>
 
-            <label className="build-field">
-              Ability
-              <select
-                value={caughtModalAbility}
-                onChange={(event) => setCaughtModalAbility(event.target.value)}
-              >
-                <option value="">(none)</option>
-                {caughtAbilityOptions.map((ability) => (
-                  <option key={ability.key} value={ability.key}>{ability.label}</option>
-                ))}
-              </select>
-            </label>
+              <label className="build-field">
+                Ability
+                <select
+                  value={caughtModalAbility}
+                  onChange={(event) => setCaughtModalAbility(event.target.value)}
+                >
+                  <option value="">(none)</option>
+                  {caughtAbilityOptions.map((ability) => (
+                    <option key={ability.key} value={ability.key}>{ability.label}</option>
+                  ))}
+                </select>
+              </label>
 
-            <label className="build-field">
-              Item
-              <select
-                value={caughtModalItem}
-                onChange={(event) => setCaughtModalItem(event.target.value)}
-              >
-                <option value="">(none)</option>
-                {buildItemOptions.map((item) => (
-                  <option key={item.key} value={item.key}>{item.label}</option>
-                ))}
-              </select>
-            </label>
+              <label className="build-field">
+                Item
+                <select
+                  value={caughtModalItem}
+                  onChange={(event) => setCaughtModalItem(event.target.value)}
+                >
+                  <option value="">(none)</option>
+                  {buildItemOptions.map((item) => (
+                    <option key={item.key} value={item.key}>{item.label}</option>
+                  ))}
+                </select>
+              </label>
+            </div>
 
             <div className="build-spreads">
               <div>
