@@ -1457,6 +1457,50 @@ function App() {
                 </header>
 
                 <section className="details-section">
+                  <h3>Abilities</h3>
+                  <div className="tag-wrap">
+                    {selectedDetails.abilities.map((ability) => {
+                      const info = dataset?.abilities[ability];
+                      return (
+                        <span
+                          key={ability}
+                          className="tag-button"
+                          onMouseEnter={(e) => info && popShow(e, { kind: "ability", info })}
+                          onMouseMove={popMove}
+                          onMouseLeave={popHide}
+                        >
+                          {info?.name ?? getDisplayToken(ability)}
+                        </span>
+                      );
+                    })}
+                  </div>
+                </section>
+
+                <section className="details-section">
+                  <h3>Held Items</h3>
+                  <div className="tag-wrap">
+                    {selectedDetails.heldItems.length > 0 ? (
+                      selectedDetails.heldItems.map((item) => {
+                        const info = dataset?.items[item];
+                        return (
+                          <span
+                            key={item}
+                            className="tag-button"
+                            onMouseEnter={(e) => info && popShow(e, { kind: "item", info })}
+                            onMouseMove={popMove}
+                            onMouseLeave={popHide}
+                          >
+                            {info?.name ?? getDisplayToken(item)}
+                          </span>
+                        );
+                      })
+                    ) : (
+                      <span className="muted">No held items listed.</span>
+                    )}
+                  </div>
+                </section>
+
+                <section className="details-section">
                   <div className="details-section-header">
                     <h3>Caught Pokémon</h3>
                     {(selectedSpecies && (caughtCountBySpecies[selectedSpecies] ?? 0) > 0) ? (
@@ -1659,50 +1703,6 @@ function App() {
                         <span className="stat-value">{value}</span>
                       </div>
                     ))}
-                  </div>
-                </section>
-
-                <section className="details-section">
-                  <h3>Abilities</h3>
-                  <div className="tag-wrap">
-                    {selectedDetails.abilities.map((ability) => {
-                      const info = dataset?.abilities[ability];
-                      return (
-                        <span
-                          key={ability}
-                          className="tag-button"
-                          onMouseEnter={(e) => info && popShow(e, { kind: "ability", info })}
-                          onMouseMove={popMove}
-                          onMouseLeave={popHide}
-                        >
-                          {info?.name ?? getDisplayToken(ability)}
-                        </span>
-                      );
-                    })}
-                  </div>
-                </section>
-
-                <section className="details-section">
-                  <h3>Held Items</h3>
-                  <div className="tag-wrap">
-                    {selectedDetails.heldItems.length > 0 ? (
-                      selectedDetails.heldItems.map((item) => {
-                        const info = dataset?.items[item];
-                        return (
-                          <span
-                            key={item}
-                            className="tag-button"
-                            onMouseEnter={(e) => info && popShow(e, { kind: "item", info })}
-                            onMouseMove={popMove}
-                            onMouseLeave={popHide}
-                          >
-                            {info?.name ?? getDisplayToken(item)}
-                          </span>
-                        );
-                      })
-                    ) : (
-                      <span className="muted">No held items listed.</span>
-                    )}
                   </div>
                 </section>
 

@@ -457,9 +457,6 @@ button.btn-danger:hover {
 }
 
 .details-panel {
-  border: 1px solid #d9e4ee;
-  border-radius: 14px;
-  padding: 0.9rem;
   height: auto;
   overflow-y: visible;
 }
@@ -493,14 +490,23 @@ button.btn-danger:hover {
 }
 
 .details-section {
-  margin-top: 0.9rem;
-  padding-top: 0.9rem;
-  border-top: 1px solid #eef3f8;
+  margin-top: 1rem;
+  padding: 1rem 1.1rem;
+  background: #f8fafc;
+  border: 1px solid #e1e8f0;
+  border-radius: 12px;
+  box-shadow: 0 2px 10px rgba(16, 35, 53, 0.05);
 }
 
 .details-section h3 {
-  margin: 0;
-  font-size: 1rem;
+  margin: 0 0 0.8rem;
+  font-size: 0.9rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: #1f5f95;
+  padding-bottom: 0.6rem;
+  border-bottom: 2px solid #eef3f8;
 }
 
 .details-section-header {
@@ -509,21 +515,26 @@ button.btn-danger:hover {
   justify-content: space-between;
   gap: 0.6rem;
   flex-wrap: wrap;
+  margin-bottom: 0.8rem;
+  padding-bottom: 0.6rem;
+  border-bottom: 2px solid #eef3f8;
 }
 
 .details-section-header h3 {
   margin: 0;
+  padding-bottom: 0;
+  border-bottom: 0;
 }
 
 .catch-locations-subsection {
   margin-top: 1rem;
   padding-top: 0.9rem;
-  border-top: 1px dashed #eef3f8;
+  border-top: 1px dashed #dfe7ef;
 }
 
 .catch-locations-subsection h4 {
   margin: 0 0 0.45rem;
-  font-size: 0.9rem;
+  font-size: 0.8rem;
   color: #355066;
   text-transform: uppercase;
   letter-spacing: 0.5px;
@@ -1329,8 +1340,12 @@ input[type="number"]::-webkit-inner-spin-button {
     font-size: 1.25rem;
   }
 
+  .details-section {
+    padding: 0.85rem 0.9rem;
+  }
+
   .details-section h3 {
-    font-size: 1rem;
+    font-size: 0.85rem;
   }
 
   .stat-display-row {
@@ -1439,8 +1454,12 @@ input[type="number"]::-webkit-inner-spin-button {
     font-size: 1.1rem;
   }
 
+  .details-section {
+    padding: 0.75rem 0.8rem;
+  }
+
   .details-section h3 {
-    font-size: 0.95rem;
+    font-size: 0.8rem;
   }
 
   .stat-display-row {
