@@ -1490,6 +1490,18 @@ function App() {
                         <span className="muted">None</span>
                       )}
                     </div>
+                    <div className="header-pill-row">
+                      <span className="header-pill-group-label">Catch Locations:</span>
+                      {selectedDetails.locations.length > 0 ? (
+                        selectedDetails.locations.map((location) => (
+                          <span key={`${location.mapName}-${location.method}`} className="location-chip">
+                            {location.mapName} · {location.method} · Lv {location.minLevel}-{location.maxLevel}
+                          </span>
+                        ))
+                      ) : (
+                        <span className="muted">No encounter location found in loaded source.</span>
+                      )}
+                    </div>
                   </div>
                   {selectedImageSrc ? (
                     <img
@@ -1663,21 +1675,6 @@ function App() {
                   ) : (
                     <p className="muted">This Pokémon is not marked as caught.</p>
                   )}
-
-                  <div className="catch-locations-subsection">
-                    <h4>Catch Locations</h4>
-                    {selectedDetails.locations.length > 0 ? (
-                      <div className="stack-list">
-                        {selectedDetails.locations.map((location) => (
-                          <p key={`${location.mapName}-${location.method}`}>
-                            {location.mapName} · {location.method} · Lv {location.minLevel}-{location.maxLevel}
-                          </p>
-                        ))}
-                      </div>
-                    ) : (
-                      <p className="muted">No encounter location found in loaded source.</p>
-                    )}
-                  </div>
                 </section>
 
                 <section className="details-section">
