@@ -1462,7 +1462,7 @@ function App() {
                     {(selectedSpecies && (caughtCountBySpecies[selectedSpecies] ?? 0) > 0) ? (
                       <button
                         type="button"
-                        className="status-pill"
+                        className="status-pill btn-primary"
                         onClick={() => selectedSpecies && openCaughtModal(selectedSpecies)}
                       >
                         Catch another
@@ -1470,7 +1470,7 @@ function App() {
                     ) : (
                       <button
                         type="button"
-                        className="status-pill"
+                        className="status-pill btn-primary"
                         onClick={() => selectedSpecies && openCaughtModal(selectedSpecies)}
                       >
                         Mark as caught
@@ -1489,7 +1489,7 @@ function App() {
                               </button>
                               <button
                                 type="button"
-                                className="status-pill"
+                                className="status-pill btn-danger"
                                 onClick={() => {
                                   setCaughtPokemonMap((current) => {
                                     const next = { ...current };
@@ -1906,7 +1906,7 @@ function App() {
                       </div>
                     </div>
 
-                    <button type="button" onClick={addBuild}>Add Build</button>
+                    <button type="button" className="btn-primary" onClick={addBuild}>Add Build</button>
                     {buildError ? <p className="error-text">{buildError}</p> : null}
                   </div>
 
@@ -1916,7 +1916,7 @@ function App() {
                         <article key={build.id} className="build-card">
                           <div className="build-card-header">
                             <strong>{build.name || `Build #${index + 1}`}</strong>
-                            <button type="button" className="status-pill" onClick={() => removeBuild(build.id)}>
+                            <button type="button" className="status-pill btn-danger" onClick={() => removeBuild(build.id)}>
                               Remove
                             </button>
                           </div>
@@ -1979,18 +1979,23 @@ function App() {
                   >
                     <div className="pokemon-card-top">
                       <span className="dex-order">#{entry.dexOrder}</span>
-                      <button
-                        type="button"
-                        className="status-pill"
-                        onClick={(event) => {
-                          event.preventDefault();
-                          event.stopPropagation();
-                          toggleCaught(entry.id);
-                        }}
-                        aria-pressed={isCaught}
-                      >
-                        {isCaught ? `Caught x${caughtCountForSpecies}` : "Catch"}
-                      </button>
+                      <div className="catch-btn-group">
+                        <button
+                          type="button"
+                          className={`status-pill ${isCaught ? "caught" : ""}`}
+                          onClick={(event) => {
+                            event.preventDefault();
+                            event.stopPropagation();
+                            toggleCaught(entry.id);
+                          }}
+                          aria-pressed={isCaught}
+                        >
+                          {isCaught ? "Caught" : "Catch"}
+                        </button>
+                        {isCaught ? (
+                          <span className="caught-count-badge">{caughtCountForSpecies}</span>
+                        ) : null}
+                      </div>
                     </div>
                     <SpriteImage
                       speciesKey={entry.id}
@@ -2224,7 +2229,7 @@ function App() {
             {caughtModalError ? <p className="error-text">{caughtModalError}</p> : null}
 
             <div className="modal-actions">
-              <button type="button" onClick={saveCaughtProfile}>Save</button>
+              <button type="button" className="btn-primary" onClick={saveCaughtProfile}>Save</button>
               <button type="button" className="status-pill" onClick={closeCaughtModal}>Cancel</button>
             </div>
           </section>

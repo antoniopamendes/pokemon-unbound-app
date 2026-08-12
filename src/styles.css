@@ -13,6 +13,52 @@ body {
   min-height: 100vh;
 }
 
+button {
+  font-family: inherit;
+  border: 1px solid #d1dde9;
+  background: #ffffff;
+  color: #355066;
+  border-radius: 7px;
+  padding: 0.4rem 0.8rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  line-height: 1.2;
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+button:hover {
+  border-color: #8facc0;
+  background: #f4f8fc;
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+button.btn-primary {
+  background: #3f7fc1;
+  border-color: #3f7fc1;
+  color: #ffffff;
+}
+
+button.btn-primary:hover {
+  background: #35699e;
+  border-color: #35699e;
+}
+
+button.btn-danger {
+  background: #ffffff;
+  border-color: #e3b3b3;
+  color: #9c2a2a;
+}
+
+button.btn-danger:hover {
+  background: #fbecec;
+  border-color: #d68b8b;
+}
+
 .app-shell {
   max-width: 1200px;
   margin: 0 auto;
@@ -125,14 +171,31 @@ body {
 }
 
 .status-pill {
-  font-size: 0.78rem;
-  padding: 0.3rem 0.5rem;
-  border-radius: 999px;
+  font-size: 0.72rem;
+  padding: 0.32rem 0.6rem;
+  border-radius: 6px;
   background: #ecf2f8;
   color: #3f5c72;
-  border: 0;
+  border: 1px solid #dce6ef;
   cursor: pointer;
+  font-weight: 600;
   margin-left: auto;
+}
+
+.status-pill:hover {
+  background: #dfe9f2;
+  border-color: #c3d4e3;
+}
+
+.status-pill.caught {
+  background: #d5f0df;
+  color: #1f6a3e;
+  border-color: #8cc8a3;
+}
+
+.status-pill.caught:hover {
+  background: #c3e8d1;
+  border-color: #6aa980;
 }
 
 .pokemon-row.caught .status-pill {
@@ -190,6 +253,31 @@ body {
   align-items: center;
   justify-content: space-between;
   gap: 0.4rem;
+}
+
+.catch-btn-group {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.catch-btn-group .status-pill {
+  margin-left: 0;
+}
+
+.caught-count-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.2rem;
+  height: 1.2rem;
+  padding: 0 0.3rem;
+  border-radius: 999px;
+  background: #1f6a3e;
+  color: #ffffff;
+  font-size: 0.65rem;
+  font-weight: 700;
+  line-height: 1;
 }
 
 .card-sprite {
