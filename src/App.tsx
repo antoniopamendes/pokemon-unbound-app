@@ -184,25 +184,33 @@ function SplitIcon({ split }: { split: string }) {
 
 type MovesTableEntry = { learn: { move: string; level: number }; info: MoveInfo | undefined };
 
+type MovesTableFirstColumn = {
+  header: string;
+  render: (entry: MovesTableEntry) => React.ReactNode;
+} | null;
+
 function MovesTable({
   moves,
   dataset: _dataset,
   onShow,
   onMove,
   onHide,
+  firstColumn,
 }: {
   moves: MovesTableEntry[];
   dataset: UnboundDataset | null;
   onShow: (e: React.MouseEvent, key: string) => void;
   onMove: (e: React.MouseEvent) => void;
   onHide: () => void;
+  firstColumn?: MovesTableFirstColumn;
 }) {
+  const showFirstColumn = firstColumn !== null;
   return (
     <div className="moves-table-wrap">
       <table className="moves-table">
         <thead>
           <tr>
-            <th>Lv</th>
+            {showFirstColumn ? <th>{firstColumn?.header ?? "Lv"}</th> : null}
             <th>Name</th>
             <th>Type</th>
             <th>Cat</th>
@@ -212,34 +220,41 @@ function MovesTable({
           </tr>
         </thead>
         <tbody>
-          {moves.map(({ learn, info }) => (
-            <tr
-              key={`${learn.move}-${learn.level}`}
-              className="move-row"
-              onMouseEnter={(e) => onShow(e, learn.move)}
-              onMouseMove={onMove}
-              onMouseLeave={onHide}
-            >
-              <td className="move-level">{learn.level < 0 ? "—" : learn.level}</td>
-              <td className="move-name">{info?.name ?? getDisplayToken(learn.move)}</td>
-              <td>
-                {info?.type ? (
-                  <span
-                    className="type-chip type-chip-sm"
-                    style={{ background: getTypeColor(info.type), color: getTypeTextColor(info.type) }}
-                  >
-                    {getDisplayToken(info.type)}
-                  </span>
-                ) : "—"}
-              </td>
-              <td className="move-split">
-                {info?.split ? <SplitIcon split={info.split} /> : "—"}
-              </td>
-              <td>{info?.power === 0 ? "—" : (info?.power ?? "—")}</td>
-              <td>{info?.accuracy === 0 ? "—" : (info?.accuracy ?? "—")}</td>
-              <td>{info?.pp ?? "—"}</td>
-            </tr>
-          ))}
+          {moves.map((entry) => {
+            const { learn, info } = entry;
+            return (
+              <tr
+                key={`${learn.move}-${learn.level}`}
+                className="move-row"
+                onMouseEnter={(e) => onShow(e, learn.move)}
+                onMouseMove={onMove}
+                onMouseLeave={onHide}
+              >
+                {showFirstColumn ? (
+                  <td className="move-level">
+                    {firstColumn ? firstColumn.render(entry) : (learn.level < 0 ? "—" : learn.level)}
+                  </td>
+                ) : null}
+                <td className="move-name">{info?.name ?? getDisplayToken(learn.move)}</td>
+                <td>
+                  {info?.type ? (
+                    <span
+                      className="type-chip type-chip-sm"
+                      style={{ background: getTypeColor(info.type), color: getTypeTextColor(info.type) }}
+                    >
+                      {getDisplayToken(info.type)}
+                    </span>
+                  ) : "—"}
+                </td>
+                <td className="move-split">
+                  {info?.split ? <SplitIcon split={info.split} /> : "—"}
+                </td>
+                <td>{info?.power === 0 ? "—" : (info?.power ?? "—")}</td>
+                <td>{info?.accuracy === 0 ? "—" : (info?.accuracy ?? "—")}</td>
+                <td>{info?.pp ?? "—"}</td>
+              </tr>
+            );
+          })}
         </tbody>
       </table>
     </div>
@@ -506,6 +521,7 @@ function App() {
   const [caughtTutorMoveSlugs, setCaughtTutorMoveSlugs] = useState<string[]>([]);
   const [caughtMovesLoading, setCaughtMovesLoading] = useState(false);
   const [tmhmMoveSlugs, setTmhmMoveSlugs] = useState<string[]>([]);
+  const [tmhmNumbersBySlug, setTmhmNumbersBySlug] = useState<Record<string, string>>({});
   const [tutorMoveSlugs, setTutorMoveSlugs] = useState<string[]>([]);
   const [movesetLoading, setMovesetLoading] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -599,6 +615,7 @@ function App() {
     if (!selectedSpecies) {
       setTmhmMoveSlugs([]);
       setTutorMoveSlugs([]);
+      setTmhmNumbersBySlug({});
       return;
     }
     let active = true;
@@ -608,11 +625,13 @@ function App() {
         if (!active) return;
         setTmhmMoveSlugs(Array.isArray(buckets.tmhm) ? buckets.tmhm : []);
         setTutorMoveSlugs(Array.isArray(buckets.tutor) ? buckets.tutor : []);
+        setTmhmNumbersBySlug(buckets.tmhmNumbers ?? {});
       })
       .catch(() => {
         if (!active) return;
         setTmhmMoveSlugs([]);
         setTutorMoveSlugs([]);
+        setTmhmNumbersBySlug({});
       })
       .finally(() => {
         if (active) setMovesetLoading(false);
@@ -893,6 +912,16 @@ function App() {
     () => tmhmMoveSlugs.map((slug) => moveKeyBySlug.get(slug)).filter((key): key is string => Boolean(key)),
     [tmhmMoveSlugs, moveKeyBySlug],
   );
+
+  const tmhmNumberByMoveKey = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const slug of tmhmMoveSlugs) {
+      const key = moveKeyBySlug.get(slug);
+      const number = tmhmNumbersBySlug[slug];
+      if (key && number) map.set(key, number);
+    }
+    return map;
+  }, [tmhmMoveSlugs, moveKeyBySlug, tmhmNumbersBySlug]);
 
   const tutorMoveKeys = useMemo(
     () => tutorMoveSlugs.map((slug) => moveKeyBySlug.get(slug)).filter((key): key is string => Boolean(key)),
@@ -1785,6 +1814,10 @@ function App() {
                       onShow={(e, key) => { const info = dataset?.moves[key]; if (info) popShow(e, { kind: "move", info }); }}
                       onMove={popMove}
                       onHide={popHide}
+                      firstColumn={{
+                        header: "TM/HM",
+                        render: (entry) => tmhmNumberByMoveKey.get(entry.learn.move) ?? "—",
+                      }}
                     />
                   ) : (
                     <p className="muted">No TM/HM moves listed.</p>
@@ -1802,6 +1835,7 @@ function App() {
                       onShow={(e, key) => { const info = dataset?.moves[key]; if (info) popShow(e, { kind: "move", info }); }}
                       onMove={popMove}
                       onHide={popHide}
+                      firstColumn={null}
                     />
                   ) : (
                     <p className="muted">No tutor moves listed.</p>
@@ -1817,6 +1851,7 @@ function App() {
                       onShow={(e, key) => { const info = dataset?.moves[key]; if (info) popShow(e, { kind: "move", info }); }}
                       onMove={popMove}
                       onHide={popHide}
+                      firstColumn={null}
                     />
                   ) : (
                     <p className="muted">No egg moves listed.</p>

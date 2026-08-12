@@ -44,11 +44,6 @@ function speciesKeyToApiCandidates(speciesKey: string): string[] {
   return [...candidates];
 }
 
-export type PokemonMoveBuckets = {
-  tmhm: string[];
-  tutor: string[];
-};
-
 export async function fetchMoveDescription(moveKey: string, moveName?: string): Promise<string> {
   const cacheKey = `https://unbound-tracker.local/pokeapi/move-desc-v2/${moveKey}`;
   const cached = await readJsonFromPersistentCache<string>(cacheKey);
@@ -132,15 +127,59 @@ export async function fetchPokemonSpriteUrl(speciesKey: string): Promise<string>
   return "";
 }
 
+export type PokemonMoveBuckets = {
+  tmhm: string[];
+  tutor: string[];
+  tmhmNumbers: Record<string, string>;
+};
+
+const PREFERRED_MACHINE_VERSION_GROUPS = ["firered-leafgreen", "emerald", "ruby-sapphire"];
+
+async function fetchMachineNumberForMove(moveSlug: string): Promise<string> {
+  const cacheKey = `https://unbound-tracker.local/pokeapi/tmhm-number-v1/${moveSlug}`;
+  const cached = await readJsonFromPersistentCache<string>(cacheKey);
+  if (cached !== null) return cached;
+
+  try {
+    const res = await fetch(`${BASE}/move/${moveSlug}`);
+    if (res.ok) {
+      const data = (await res.json()) as {
+        machines: Array<{ machine: { url: string }; version_group: { name: string } }>;
+      };
+      const machineEntry =
+        PREFERRED_MACHINE_VERSION_GROUPS
+          .map((group) => data.machines.find((m) => m.version_group.name === group))
+          .find((entry): entry is NonNullable<typeof entry> => Boolean(entry))
+        ?? data.machines[0];
+
+      if (machineEntry) {
+        const machineRes = await fetch(machineEntry.machine.url);
+        if (machineRes.ok) {
+          const machineData = (await machineRes.json()) as { item: { name: string } };
+          const label = machineData.item.name.toUpperCase();
+          await writeJsonToPersistentCache(cacheKey, label);
+          return label;
+        }
+      }
+    }
+  } catch {
+    // Fall through to empty result below.
+  }
+
+  await writeJsonToPersistentCache(cacheKey, "");
+  return "";
+}
+
 export async function fetchPokemonMoveBuckets(speciesKey: string): Promise<PokemonMoveBuckets> {
   const candidates = speciesKeyToApiCandidates(speciesKey);
-  const cacheKey = `https://unbound-tracker.local/pokeapi/move-buckets-v1/${speciesKey}`;
+  const cacheKey = `https://unbound-tracker.local/pokeapi/move-buckets-v2/${speciesKey}`;
   const cached = await readJsonFromPersistentCache<PokemonMoveBuckets>(cacheKey);
   if (
     cached
     && typeof cached === "object"
     && Array.isArray(cached.tmhm)
     && Array.isArray(cached.tutor)
+    && typeof cached.tmhmNumbers === "object"
   ) {
     return cached;
   }
@@ -164,9 +203,19 @@ export async function fetchPokemonMoveBuckets(speciesKey: string): Promise<Pokem
         if (methods.includes("tutor")) tutor.add(entry.move.name);
       }
 
+      const tmhmList = [...tmhm].sort();
+      const tmhmNumbers: Record<string, string> = {};
+      await Promise.all(
+        tmhmList.map(async (slug) => {
+          const label = await fetchMachineNumberForMove(slug);
+          if (label) tmhmNumbers[slug] = label;
+        }),
+      );
+
       const buckets: PokemonMoveBuckets = {
-        tmhm: [...tmhm].sort(),
+        tmhm: tmhmList,
         tutor: [...tutor].sort(),
+        tmhmNumbers,
       };
       await writeJsonToPersistentCache(cacheKey, buckets);
       return buckets;
@@ -175,7 +224,7 @@ export async function fetchPokemonMoveBuckets(speciesKey: string): Promise<Pokem
     }
   }
 
-  const emptyBuckets: PokemonMoveBuckets = { tmhm: [], tutor: [] };
+  const emptyBuckets: PokemonMoveBuckets = { tmhm: [], tutor: [], tmhmNumbers: {} };
   await writeJsonToPersistentCache(cacheKey, emptyBuckets);
   return emptyBuckets;
 }

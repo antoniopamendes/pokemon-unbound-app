@@ -949,7 +949,8 @@ button.btn-danger:hover {
   opacity: 0.65;
 }
 
-.evo-card-current {
+.evo-card-current,
+.evo-card.evo-card-current:disabled {
   border-color: #6ca2d2;
   background: #deeeff;
   box-shadow: 0 0 0 2px #6ca2d2 inset;
