@@ -2455,6 +2455,14 @@ input[type="number"]::-webkit-inner-spin-button {
     font-size: 0.85rem;
     gap: 0.6rem 0.9rem;
   }
+
+  .team-overview-grid {
+    margin-bottom: 0.6rem;
+  }
+
+  .team-totals-card {
+    margin-top: 0.6rem;
+  }
 }
 
 @media (max-width: 480px) {
