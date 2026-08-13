@@ -60,6 +60,7 @@ export default function BoxesPage() {
   const [pickerSearch, setPickerSearch] = useState("");
   const [newProfileSpecies, setNewProfileSpecies] = useState<string | null>(null);
   const [actionLocation, setActionLocation] = useState<SlotLocation | null>(null);
+  const [editingProfile, setEditingProfile] = useState<CaughtPokemonProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -264,6 +265,22 @@ export default function BoxesPage() {
     setPickerSearch("");
   };
 
+  // Applies edits made in the "Configure Owned Pokémon" modal to an existing profile.
+  const handleProfileUpdated = (updated: CaughtPokemonProfile) => {
+    setCaughtPokemonMap((current) => {
+      const next: CaughtPokemonMap = {};
+      for (const [species, profiles] of Object.entries(current)) {
+        const filtered = profiles.filter((profile) => profile.id !== updated.id);
+        if (filtered.length > 0) {
+          next[species] = filtered;
+        }
+      }
+      next[updated.currentSpecies] = [...(next[updated.currentSpecies] ?? []), updated];
+      return next;
+    });
+    setEditingProfile(null);
+  };
+
   if (isLoading) {
     return (
       <main className="app-shell">
@@ -368,6 +385,9 @@ export default function BoxesPage() {
                     <SpriteImage speciesKey={profile.currentSpecies} fallbackUrl={spriteUrl} alt={displayName} className="box-sprite" />
                     <span className="box-picker-item-name">{displayName}</span>
                     <span className="box-picker-item-level">Lv. {profile.level}</span>
+                    <button type="button" className="status-pill" onClick={() => setEditingProfile(profile)}>
+                      Edit Stats
+                    </button>
                     <button type="button" className="status-pill btn-danger" onClick={() => releaseProfileById(profile.id)}>
                       Release
                     </button>
@@ -507,6 +527,17 @@ export default function BoxesPage() {
         />
       ) : null}
 
+      {editingProfile && dataset ? (
+        <CaughtProfileModal
+          dataset={dataset}
+          entries={entries}
+          originalSpecies={editingProfile.currentSpecies}
+          initialProfile={editingProfile}
+          onSave={handleProfileUpdated}
+          onClose={() => setEditingProfile(null)}
+        />
+      ) : null}
+
       {actionLocation && actionProfile && (
         <div className="modal-backdrop" role="dialog" aria-modal="true" onClick={() => setActionLocation(null)}>
           <section className="modal-card" onClick={(event) => event.stopPropagation()}>
@@ -516,9 +547,19 @@ export default function BoxesPage() {
               <button
                 type="button"
                 className="account-btn account-btn-primary"
+                onClick={() => {
+                  setEditingProfile(actionProfile);
+                  setActionLocation(null);
+                }}
+              >
+                Edit Stats
+              </button>
+              <button
+                type="button"
+                className="account-btn"
                 onClick={() => navigate(`/pokemon/${actionProfile.currentSpecies}`)}
               >
-                View Details
+                View Species Page
               </button>
               <button
                 type="button"

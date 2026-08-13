@@ -11,17 +11,19 @@ import {
   fetchPokemonSpriteUrl,
 } from "./pokeApi";
 import {
+  loadBoxesData,
   loadBuildMap,
   loadCaughtPokemonMap,
   loadCaughtSpeciesMap,
+  loadPartyData,
   saveBuildMap,
   saveCaughtPokemonMap,
   saveCaughtSpeciesMap,
 } from "./storage";
 import { getDisplayToken, getUnboundDataset } from "./unboundData";
 import { useCloudSync } from "./useCloudSync";
+import { getNatureModifiers } from "./statCalculator";
 import { getTypeColor, getTypeTextColor } from "./typeColors";
-import { calculateCaughtPokemonStats, getNatureModifiers } from "./statCalculator";
 import {
   BUILD_STATS,
   NATURES,
@@ -34,6 +36,7 @@ import {
 import { CaughtProfileModal } from "./CaughtProfileModal";
 import type {
   AbilityInfo,
+  BoxesData,
   BuildMap,
   CaughtPokemonMap,
   CaughtPokemonProfile,
@@ -41,6 +44,7 @@ import type {
   EvoTreeNode,
   ItemInfo,
   MoveInfo,
+  PartyData,
   PokemonBuild,
   PokemonEntry,
   PokemonStats,
@@ -469,10 +473,22 @@ function App() {
   const [caughtSpeciesMap, setCaughtSpeciesMap] = useState<CaughtSpeciesMap>(() =>
     loadCaughtSpeciesMap(),
   );
+  // Read-only view of Boxes/Party data (owned by BoxesPage) so the detail page can show
+  // where each owned profile is currently placed; refreshed whenever a species page loads.
+  const [boxesData, setBoxesData] = useState<BoxesData>(() => loadBoxesData());
+  const [partyData, setPartyData] = useState<PartyData>(() => loadPartyData());
   const params = useParams<{ id?: string }>();
   const navigate = useNavigate();
   const selectedSpecies = params.id ?? null;
   const goToSpecies = (id: string) => navigate(`/pokemon/${id}`);
+
+  // Refresh box/party placement info whenever the user opens a species detail page.
+  useEffect(() => {
+    if (selectedSpecies) {
+      setBoxesData(loadBoxesData());
+      setPartyData(loadPartyData());
+    }
+  }, [selectedSpecies]);
   const [collapsedSections, setCollapsedSections] = useState<Set<string>>(new Set());
   const toggleSection = (id: string) => {
     setCollapsedSections((current) => {
@@ -891,6 +907,23 @@ function App() {
 
   const selectedBuilds = selectedSpecies ? (buildMap[selectedSpecies] ?? []) : [];
   const selectedCaughtProfiles = selectedSpecies ? (caughtPokemonMap[selectedSpecies] ?? []) : [];
+
+  // Finds a human-readable description of where an owned profile currently lives
+  // (which box/slot, the Party, or nowhere yet), for display on the species detail page.
+  const locateOwnedProfile = (profileId: string): string => {
+    const partyIndex = partyData.findIndex((slot) => slot === profileId);
+    if (partyIndex !== -1) {
+      return `Party · Slot ${partyIndex + 1}`;
+    }
+    for (let boxIndex = 0; boxIndex < boxesData.length; boxIndex += 1) {
+      const box = boxesData[boxIndex];
+      const slotIndex = box.slots.findIndex((slot) => slot === profileId);
+      if (slotIndex !== -1) {
+        return `${box.name || `Box ${boxIndex + 1}`} · Slot ${slotIndex + 1}`;
+      }
+    }
+    return "Not placed in a box or Party yet";
+  };
 
   // Pre-fetch move/ability descriptions for the selected Pokémon so hover popovers are instant.
   useEffect(() => {
@@ -1462,172 +1495,19 @@ function App() {
                     ) : null}
                   </div>
                   {selectedCaughtProfiles.length > 0 ? (
-                    <div className="caught-list">
+                    <div className="caught-list-simple">
                       {selectedCaughtProfiles.map((profile, index) => (
-                        <div key={profile.id} className="caught-card">
-                          <div className="caught-card-header">
-                            <span className="caught-card-title">Owned #{index + 1}</span>
-                            <div className="modal-actions">
-                              <button type="button" className="status-pill" onClick={() => openProfileModalForEdit(profile)}>
-                                Update
-                              </button>
-                              <button
-                                type="button"
-                                className="status-pill btn-danger"
-                                onClick={() => {
-                                  setCaughtPokemonMap((current) => {
-                                    const next = { ...current };
-                                    const filtered = (next[selectedSpecies ?? ""] ?? []).filter((entry) => entry.id !== profile.id);
-                                    if (filtered.length > 0) {
-                                      next[selectedSpecies ?? ""] = filtered;
-                                    } else {
-                                      delete next[selectedSpecies ?? ""];
-                                    }
-                                    return next;
-                                  });
-                                }}
-                              >
-                                Remove
-                              </button>
-                            </div>
-                          </div>
-
-                          <div className="caught-badges">
-                            <div className="caught-badge">
-                              <span className="caught-badge-label">Species</span>
-                              <span className="caught-badge-value">
-                                {entries.find((entry) => entry.id === profile.currentSpecies)?.displayName
-                                  ?? getDisplayToken(profile.currentSpecies.replace("SPECIES_", ""))}
-                              </span>
-                            </div>
-                            <div className="caught-badge">
-                              <span className="caught-badge-label">Level</span>
-                              <span className="caught-badge-value">{profile.level}</span>
-                            </div>
-                            <div className="caught-badge">
-                              <span className="caught-badge-label">Nature</span>
-                              <span className="caught-badge-value">{formatNatureLabel(profile.nature)}</span>
-                            </div>
-                            <div className="caught-badge">
-                              <span className="caught-badge-label">Ability</span>
-                              <span className="caught-badge-value">
-                                {profile.ability ? (
-                                  (() => {
-                                    const info = dataset?.abilities[profile.ability];
-                                    return (
-                                      <span
-                                        className="tag-button"
-                                        data-popover-trigger="true"
-                                        onMouseEnter={(e) => info && popShow(e, { kind: "ability", info })}
-                                        onMouseMove={popMove}
-                                        onMouseLeave={popHide}
-                                        onClick={(e) => info && popToggle(e, { kind: "ability", info })}
-                                      >
-                                        {info?.name ?? getDisplayToken(profile.ability)}
-                                      </span>
-                                    );
-                                  })()
-                                ) : "—"}
-                              </span>
-                            </div>
-                            <div className="caught-badge">
-                              <span className="caught-badge-label">Held Item</span>
-                              <span className="caught-badge-value">
-                                {profile.item ? (
-                                  (() => {
-                                    const info = dataset?.items[profile.item];
-                                    return (
-                                      <span
-                                        className="tag-button"
-                                        data-popover-trigger="true"
-                                        onMouseEnter={(e) => info && popShow(e, { kind: "item", info })}
-                                        onMouseMove={popMove}
-                                        onMouseLeave={popHide}
-                                        onClick={(e) => info && popToggle(e, { kind: "item", info })}
-                                      >
-                                        {info?.name ?? getDisplayToken(profile.item)}
-                                      </span>
-                                    );
-                                  })()
-                                ) : "—"}
-                              </span>
-                            </div>
-                            <div className="caught-badge">
-                              <span className="caught-badge-label">EVs ({sumSpread(profile.evs)}/510)</span>
-                              <span className="caught-badge-value caught-spread-value">
-                                {BUILD_STATS.map((stat) => `${stat.label} ${profile.evs[stat.key]}`).join(" · ")}
-                              </span>
-                            </div>
-                            <div className="caught-badge">
-                              <span className="caught-badge-label">IVs</span>
-                              <span className="caught-badge-value caught-spread-value">
-                                {BUILD_STATS.map((stat) => `${stat.label} ${profile.ivs[stat.key]}`).join(" · ")}
-                              </span>
-                            </div>
-                          </div>
-
-                          {(() => {
-                            if (!selectedDetails) return null;
-                            const nature = NATURE_BY_NAME.get(profile.nature);
-                            const natureModifiers = getNatureModifiers(nature?.up ?? null, nature?.down ?? null);
-                            const calculatedStats = calculateCaughtPokemonStats(
-                              selectedDetails.stats,
-                              profile.level,
-                              profile.ivs,
-                              profile.evs,
-                              natureModifiers
-                            );
-                            return (
-                              <div className="caught-stats-block">
-                                <span className="caught-badge-label">Calculated Stats</span>
-                                <div className="stats-grid">
-                                  {[
-                                    ["HP", calculatedStats.hp],
-                                    ["Atk", calculatedStats.attack],
-                                    ["Def", calculatedStats.defense],
-                                    ["SpA", calculatedStats.spAttack],
-                                    ["SpD", calculatedStats.spDefense],
-                                    ["Spe", calculatedStats.speed],
-                                    ["Total", calculatedStats.total],
-                                  ].map(([label, value]) => (
-                                    <div key={label} className="stat-row">
-                                      <span className="stat-label">{label}</span>
-                                      <span className="stat-bar-wrap">
-                                        <span
-                                          className="stat-bar"
-                                          style={{ width: `${Math.min(100, Math.round((Number(value) / 255) * 100))}%` }}
-                                        />
-                                      </span>
-                                      <span className="stat-value">{value}</span>
-                                    </div>
-                                  ))}
-                                </div>
-                              </div>
-                            );
-                          })()}
-
-                          <div className="caught-moves-block">
-                            <span className="caught-badge-label">Moves</span>
-                            <span className="tag-wrap">
-                              {profile.moveset.map((moveKey) => {
-                                const info = dataset?.moves[moveKey];
-                                return (
-                                  <span
-                                    key={`${profile.id}-${moveKey}`}
-                                    className="tag-button"
-                                    data-popover-trigger="true"
-                                    onMouseEnter={(e) => info && popShow(e, { kind: "move", info })}
-                                    onMouseMove={popMove}
-                                    onMouseLeave={popHide}
-                                    onClick={(e) => info && popToggle(e, { kind: "move", info })}
-                                  >
-                                    {info?.name ?? getDisplayToken(moveKey)}
-                                  </span>
-                                );
-                              })}
-                            </span>
-                          </div>
-                        </div>
+                        <button
+                          key={profile.id}
+                          type="button"
+                          className="caught-list-row"
+                          onClick={() => openProfileModalForEdit(profile)}
+                        >
+                          <span className="caught-list-index">#{index + 1}</span>
+                          <span className="caught-list-level">Lv. {profile.level}</span>
+                          <span className="caught-list-location">{locateOwnedProfile(profile.id)}</span>
+                          <span className="caught-list-edit-hint">Edit ▸</span>
+                        </button>
                       ))}
                     </div>
                   ) : (

@@ -1074,77 +1074,53 @@ button.btn-danger:hover {
   margin-bottom: 0.35rem;
 }
 
-/* ---- Caught Pokémon cards ---- */
-.caught-list {
+
+/* ---- Caught Pokémon list (species detail page) ---- */
+.caught-list-simple {
   margin-top: 0.6rem;
   display: grid;
-  gap: 0.8rem;
+  gap: 0.5rem;
 }
 
-.caught-card {
-  border: 1px solid #d9e4ee;
-  border-radius: 12px;
-  padding: 0.85rem 1rem 1rem;
-  background: linear-gradient(180deg, #f7fbff 0%, #ffffff 60px);
-}
-
-.caught-card-header {
+.caught-list-row {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 0.5rem;
-  margin-bottom: 0.7rem;
-  padding-bottom: 0.5rem;
-  border-bottom: 1px dashed #d9e4ee;
+  gap: 0.75rem;
+  padding: 0.6rem 0.85rem;
+  border: 1px solid #d9e4ee;
+  border-radius: 10px;
+  background: #f7fbff;
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+  width: 100%;
 }
 
-.caught-card-title {
-  font-weight: 700;
-  font-size: 0.85rem;
-  color: #1f5f95;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-}
-
-.caught-badges {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-  gap: 0.6rem;
-  margin-bottom: 0.8rem;
-}
-
-.caught-badge {
-  display: grid;
-  gap: 0.15rem;
-  padding: 0.4rem 0.6rem;
+.caught-list-row:hover {
   background: #eef4fa;
-  border-radius: 8px;
+  border-color: #b7cfe3;
 }
 
-.caught-badge-label {
-  font-size: 0.68rem;
+.caught-list-index {
   font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: #6b8093;
+  color: #1f5f95;
 }
 
-.caught-badge-value {
-  font-size: 0.85rem;
+.caught-list-level {
   color: #1f3a4d;
   font-weight: 600;
 }
 
-.caught-spread-value {
-  font-size: 0.78rem;
-  font-weight: 500;
+.caught-list-location {
+  flex: 1;
+  color: #6b8093;
+  font-size: 0.85rem;
 }
 
-.caught-stats-block,
-.caught-moves-block {
-  margin-top: 0.7rem;
-  padding-top: 0.7rem;
-  border-top: 1px dashed #e1e8f0;
+.caught-list-edit-hint {
+  color: #1f5f95;
+  font-weight: 600;
+  font-size: 0.85rem;
 }
 
 /* ---- Modal ---- */
