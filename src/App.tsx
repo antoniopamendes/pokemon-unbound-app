@@ -409,35 +409,36 @@ function EvoTree({
           <span className="evo-card-name">{displayName}</span>
         </button>
 
-        {/* Regular evolutions and alternate forms (Mega/Gigantamax/Primal/Ultra Burst) get separate rows. */}
-        {node.children.length > 0 && (() => {
+        {/* Only regular (non-form) evolutions continue the chain here; alternate forms are collected separately. */}
+        {(() => {
           const regularChildren = node.children.filter((child) => !FORM_EVO_METHODS.has(child.method));
-          const formChildren = node.children.filter((child) => FORM_EVO_METHODS.has(child.method));
-          return (
-            <div className="evo-tree-children-groups">
-              {regularChildren.length > 0 && (
-                <div className="evo-tree-row">
-                  {regularChildren.map((child, i) => (
-                    <EvoTree key={`${child.species}-${i}`} node={child} selectedSpecies={selectedSpecies} dataset={dataset} onSelect={onSelect} />
-                  ))}
-                </div>
-              )}
-              {formChildren.length > 0 && (
-                <div className="evo-form-group">
-                  <span className="evo-form-group-label">Alternate Forms</span>
-                  <div className="evo-tree-row">
-                    {formChildren.map((child, i) => (
-                      <EvoTree key={`${child.species}-${i}`} node={child} selectedSpecies={selectedSpecies} dataset={dataset} onSelect={onSelect} />
-                    ))}
-                  </div>
-                </div>
-              )}
+          return regularChildren.length > 0 ? (
+            <div className="evo-tree-row">
+              {regularChildren.map((child, i) => (
+                <EvoTree key={`${child.species}-${i}`} node={child} selectedSpecies={selectedSpecies} dataset={dataset} onSelect={onSelect} />
+              ))}
             </div>
-          );
+          ) : null;
         })()}
       </div>
     </div>
   );
+}
+
+/** Collects every alternate-form node (Mega/Gigantamax/Primal/Ultra Burst) anywhere in the tree. */
+function collectFormNodes(root: EvoTreeNode): EvoTreeNode[] {
+  const forms: EvoTreeNode[] = [];
+  const walk = (node: EvoTreeNode) => {
+    for (const child of node.children) {
+      if (FORM_EVO_METHODS.has(child.method)) {
+        forms.push(child);
+      } else {
+        walk(child);
+      }
+    }
+  };
+  walk(root);
+  return forms;
 }
 
 // Number of Pokémon cards rendered per page; more load in as the user scrolls near the bottom.
@@ -2050,14 +2051,35 @@ function App() {
                   {selectedDetails.evolutions == null || selectedDetails.evolutions.children.length === 0 ? (
                     <p className="muted">Does not evolve.</p>
                   ) : (
-                    <div className="evo-tree-root">
-                      <EvoTree
-                        node={selectedDetails.evolutions}
-                        selectedSpecies={selectedSpecies}
-                        dataset={dataset}
-                        onSelect={goToSpecies}
-                      />
-                    </div>
+                    <>
+                      <div className="evo-tree-root">
+                        <EvoTree
+                          node={selectedDetails.evolutions}
+                          selectedSpecies={selectedSpecies}
+                          dataset={dataset}
+                          onSelect={goToSpecies}
+                        />
+                      </div>
+                      {(() => {
+                        const formNodes = collectFormNodes(selectedDetails.evolutions);
+                        return formNodes.length > 0 ? (
+                          <div className="evo-form-group">
+                            <span className="evo-form-group-label">Alternate Forms</span>
+                            <div className="evo-tree-row evo-tree-row-forms">
+                              {formNodes.map((formNode, i) => (
+                                <EvoTree
+                                  key={`${formNode.species}-${i}`}
+                                  node={formNode}
+                                  selectedSpecies={selectedSpecies}
+                                  dataset={dataset}
+                                  onSelect={goToSpecies}
+                                />
+                              ))}
+                            </div>
+                          </div>
+                        ) : null;
+                      })()}
+                    </>
                   )}
                 </section>
 

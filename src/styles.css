@@ -1153,17 +1153,12 @@ button.btn-danger:hover {
 }
 
 /* Stacks the regular-evolution row above the alternate-forms row for a given node */
-.evo-tree-children-groups {
-  display: flex;
-  flex-direction: column;
-  gap: 0.6rem;
-}
-
 .evo-form-group {
   display: flex;
   flex-direction: column;
-  gap: 0.35rem;
-  padding: 0.4rem 0.5rem;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+  padding: 0.6rem 0.7rem;
   border: 1px dashed #cbd8e4;
   border-radius: 10px;
   background: #fbfdff;
@@ -1175,6 +1170,13 @@ button.btn-danger:hover {
   text-transform: uppercase;
   letter-spacing: 0.03em;
   color: #7a8a99;
+}
+
+/* Alternate forms are shown side by side below the main chain, not nested vertically */
+.evo-tree-row-forms {
+  flex-direction: row;
+  flex-wrap: wrap;
+  overflow-x: auto;
 }
 
 
