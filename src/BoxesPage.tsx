@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import type { DragEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { SpriteImage } from "./App";
+import { SpriteImage, usePopover } from "./App";
 import { CaughtProfileModal } from "./CaughtProfileModal";
 import { fetchUnboundPokedex } from "./pokedex";
 import { NATURE_BY_NAME, formatNatureLabel } from "./pokemonBuild";
@@ -53,6 +53,7 @@ type SlotLocation = { kind: "box"; boxIndex: number; slotIndex: number } | { kin
 
 export default function BoxesPage() {
   const navigate = useNavigate();
+  const { show: popShow, move: popMove, hide: popHide, toggle: popToggle, popoverEl } = usePopover();
   const [entries, setEntries] = useState<PokemonEntry[]>([]);
   const [dataset, setDataset] = useState<UnboundDataset | null>(null);
   const [caughtPokemonMap, setCaughtPokemonMap] = useState<CaughtPokemonMap>(() => loadCaughtPokemonMap());
@@ -456,6 +457,7 @@ export default function BoxesPage() {
 
   return (
     <main className="app-shell">
+      {popoverEl}
       <section className="card">
         <header className="header">
           <div className="header-top-row">
@@ -517,9 +519,22 @@ export default function BoxesPage() {
                         </div>
                       ) : null}
                       <div className="team-roster-moves">
-                        {profile.moveset.map((moveKey) => (
-                          <span key={moveKey} className="tag-button">{dataset?.moves[moveKey]?.name ?? getDisplayToken(moveKey)}</span>
-                        ))}
+                        {profile.moveset.map((moveKey) => {
+                          const moveInfo = dataset?.moves[moveKey];
+                          return (
+                            <span
+                              key={moveKey}
+                              className="tag-button"
+                              data-popover-trigger="true"
+                              onMouseEnter={(e) => moveInfo && popShow(e, { kind: "move", info: moveInfo })}
+                              onMouseMove={popMove}
+                              onMouseLeave={popHide}
+                              onClick={(e) => moveInfo && popToggle(e, { kind: "move", info: moveInfo })}
+                            >
+                              {moveInfo?.name ?? getDisplayToken(moveKey)}
+                            </span>
+                          );
+                        })}
                       </div>
                     </div>
                   ) : null}

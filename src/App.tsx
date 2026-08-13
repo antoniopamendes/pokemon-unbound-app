@@ -54,7 +54,7 @@ import type {
 } from "./types";
 
 // ---- Hover popover ----
-type PopoverContent =
+export type PopoverContent =
   | { kind: "move"; info: MoveInfo }
   | { kind: "ability"; info: AbilityInfo }
   | { kind: "item"; info: ItemInfo };
@@ -109,7 +109,7 @@ function PopoverCard({ content, liveDesc }: { content: PopoverContent; liveDesc:
   );
 }
 
-function usePopover() {
+export function usePopover() {
   const [pos, setPos] = useState<{ x: number; y: number } | null>(null);
   const [content, setContent] = useState<PopoverContent | null>(null);
   const [liveDesc, setLiveDesc] = useState<string>("");
