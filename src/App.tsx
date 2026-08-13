@@ -453,10 +453,19 @@ function sumSpread(spread: StatSpread): number {
   return BUILD_STATS.reduce((sum, stat) => sum + spread[stat.key], 0);
 }
 
-function collectEvolutionSpecies(node: EvoTreeNode | null, output: Set<string>): void {
-  if (!node) return;
-  output.add(node.species);
-  node.children.forEach((child) => collectEvolutionSpecies(child, output));
+/** Returns the unique path of species from the evolution tree root down to `target` (inclusive), or just [target] if not found. */
+function findAncestorPath(root: EvoTreeNode | null, target: string): string[] {
+  if (!root) return [target];
+  const search = (node: EvoTreeNode, acc: string[]): string[] | null => {
+    const next = [...acc, node.species];
+    if (node.species === target) return next;
+    for (const child of node.children) {
+      const found = search(child, next);
+      if (found) return found;
+    }
+    return null;
+  };
+  return search(root, []) ?? [target];
 }
 
 function toSlug(value: string): string {
@@ -521,6 +530,7 @@ function App() {
   const [caughtModalOriginalSpecies, setCaughtModalOriginalSpecies] = useState<string | null>(null);
   const [caughtModalEditingId, setCaughtModalEditingId] = useState<string | null>(null);
   const [caughtModalCurrentSpecies, setCaughtModalCurrentSpecies] = useState<string>("");
+  const [caughtModalStartingSpecies, setCaughtModalStartingSpecies] = useState<string>("");
   const [caughtModalLevel, setCaughtModalLevel] = useState<number>(1);
   const [caughtModalNature, setCaughtModalNature] = useState<string>(NATURES[0].name);
   const [caughtModalAbility, setCaughtModalAbility] = useState<string>("");
@@ -696,6 +706,48 @@ function App() {
     return counts;
   }, [caughtPokemonMap]);
 
+  // Species marked as caught only because they're an earlier evolution stage of a
+  // registered catch (e.g. Bulbasaur/Ivysaur when a Venasaur was caught starting as Bulbasaur).
+  // These get the greenish "caught" styling but never their own count badge.
+  const ancestorCaughtSpecies = useMemo(() => {
+    const marked = new Set<string>();
+    if (!dataset) return marked;
+    Object.values(caughtPokemonMap).flat().forEach((profile) => {
+      const startingSpecies = profile.startingSpecies || profile.currentSpecies;
+      if (startingSpecies === profile.currentSpecies) return;
+      const details = dataset.pokemon[profile.currentSpecies];
+      const path = findAncestorPath(details?.evolutions ?? null, profile.currentSpecies);
+      const startIdx = path.indexOf(startingSpecies);
+      if (startIdx === -1) return;
+      for (let i = startIdx; i < path.length - 1; i += 1) {
+        marked.add(path[i]);
+      }
+    });
+    return marked;
+  }, [caughtPokemonMap, dataset]);
+
+  // Maps an ancestor-only species to the final (currentSpecies) forms that were registered as having evolved from it.
+  const ancestorCaughtSources = useMemo(() => {
+    const sources = new Map<string, Set<string>>();
+    if (!dataset) return sources;
+    Object.values(caughtPokemonMap).flat().forEach((profile) => {
+      const startingSpecies = profile.startingSpecies || profile.currentSpecies;
+      if (startingSpecies === profile.currentSpecies) return;
+      const details = dataset.pokemon[profile.currentSpecies];
+      const path = findAncestorPath(details?.evolutions ?? null, profile.currentSpecies);
+      const startIdx = path.indexOf(startingSpecies);
+      if (startIdx === -1) return;
+      for (let i = startIdx; i < path.length - 1; i += 1) {
+        if (!sources.has(path[i])) sources.set(path[i], new Set());
+        sources.get(path[i])!.add(profile.currentSpecies);
+      }
+    });
+    return sources;
+  }, [caughtPokemonMap, dataset]);
+
+  const isSpeciesRegistered = (speciesId: string) =>
+    (caughtCountBySpecies[speciesId] ?? 0) > 0 || ancestorCaughtSpecies.has(speciesId);
+
   const availableTypeFilters = useMemo(() => {
     if (!dataset) {
       return [] as string[];
@@ -714,7 +766,7 @@ function App() {
         query.length === 0 ||
         entry.displayName.toLowerCase().includes(query);
 
-      const matchesCaught = !caughtOnly || (caughtCountBySpecies[entry.id] ?? 0) > 0;
+      const matchesCaught = !caughtOnly || isSpeciesRegistered(entry.id);
       
       const pokemonTypes = dataset?.pokemon[entry.id]?.types ?? [];
       const matchesType =
@@ -736,7 +788,7 @@ function App() {
 
       return matchesName && matchesCaught && matchesType && matchesBaseStat && matchesIndividualStats;
     });
-  }, [entries, search, caughtOnly, caughtCountBySpecies, selectedTypes, dataset, minBaseStat, maxBaseStat, statFilters]);
+  }, [entries, search, caughtOnly, caughtCountBySpecies, ancestorCaughtSpecies, selectedTypes, dataset, minBaseStat, maxBaseStat, statFilters]);
 
   const [visibleCount, setVisibleCount] = useState(GRID_PAGE_SIZE);
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
@@ -769,8 +821,8 @@ function App() {
   );
 
   const caughtCount = useMemo(
-    () => entries.filter((entry) => (caughtCountBySpecies[entry.id] ?? 0) > 0).length,
-    [entries, caughtCountBySpecies],
+    () => entries.filter((entry) => isSpeciesRegistered(entry.id)).length,
+    [entries, caughtCountBySpecies, ancestorCaughtSpecies],
   );
 
   const totalCount = entries.length;
@@ -786,6 +838,7 @@ function App() {
     setCaughtModalOriginalSpecies(speciesKey);
     setCaughtModalEditingId(null);
     setCaughtModalCurrentSpecies(speciesKey);
+    setCaughtModalStartingSpecies(speciesKey);
     setCaughtModalLevel(1);
     setCaughtModalNature(NATURES[0].name);
     setCaughtModalAbility(defaultAbility);
@@ -805,6 +858,7 @@ function App() {
     setCaughtModalOriginalSpecies(profile.originalSpecies);
     setCaughtModalEditingId(profile.id);
     setCaughtModalCurrentSpecies(profile.currentSpecies);
+    setCaughtModalStartingSpecies(profile.startingSpecies || profile.currentSpecies);
     setCaughtModalLevel(profile.level);
     setCaughtModalNature(profile.nature);
     setCaughtModalAbility(profile.ability || currentDetails?.abilities[0] || "");
@@ -821,6 +875,7 @@ function App() {
     setCaughtModalOriginalSpecies(null);
     setCaughtModalEditingId(null);
     setCaughtModalCurrentSpecies("");
+    setCaughtModalStartingSpecies("");
     setCaughtModalError("");
     setCaughtMovesLoading(false);
   };
@@ -860,6 +915,7 @@ function App() {
       id: caughtModalEditingId ?? `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
       originalSpecies: caughtModalOriginalSpecies,
       currentSpecies: caughtModalCurrentSpecies || caughtModalOriginalSpecies,
+      startingSpecies: caughtModalStartingSpecies || caughtModalCurrentSpecies || caughtModalOriginalSpecies,
       level: Math.max(1, Math.min(100, caughtModalLevel)),
       nature: caughtModalNature,
       ability: caughtModalAbility,
@@ -1014,24 +1070,15 @@ function App() {
   const selectedBuilds = selectedSpecies ? (buildMap[selectedSpecies] ?? []) : [];
   const selectedCaughtProfiles = selectedSpecies ? (caughtPokemonMap[selectedSpecies] ?? []) : [];
 
-  const caughtModalOriginalDetails = useMemo(
-    () => (caughtModalOriginalSpecies && dataset ? dataset.pokemon[caughtModalOriginalSpecies] ?? null : null),
-    [caughtModalOriginalSpecies, dataset],
-  );
-
   const caughtModalCurrentDetails = useMemo(
     () => (caughtModalCurrentSpecies && dataset ? dataset.pokemon[caughtModalCurrentSpecies] ?? null : null),
     [caughtModalCurrentSpecies, dataset],
   );
 
-  const caughtEvolutionSpeciesOptions = useMemo(() => {
-    const all = new Set<string>();
-    collectEvolutionSpecies(caughtModalOriginalDetails?.evolutions ?? null, all);
-    if (caughtModalOriginalSpecies) {
-      all.add(caughtModalOriginalSpecies);
-    }
-    return [...all];
-  }, [caughtModalOriginalDetails, caughtModalOriginalSpecies]);
+  const caughtStartingSpeciesOptions = useMemo(() => {
+    if (!caughtModalCurrentSpecies) return [] as string[];
+    return findAncestorPath(caughtModalCurrentDetails?.evolutions ?? null, caughtModalCurrentSpecies);
+  }, [caughtModalCurrentDetails, caughtModalCurrentSpecies]);
 
   const caughtAbilityOptions = useMemo(() => {
     if (!caughtModalCurrentDetails || !dataset) {
@@ -1758,7 +1805,20 @@ function App() {
                       ))}
                     </div>
                   ) : (
-                    <p className="muted">This Pokémon is not marked as caught.</p>
+                    <p className="muted">
+                      {selectedSpecies && ancestorCaughtSources.has(selectedSpecies) ? (
+                        <>
+                          Registered as an earlier evolution stage of{" "}
+                          {[...ancestorCaughtSources.get(selectedSpecies)!]
+                            .map((speciesKey) => entries.find((entry) => entry.id === speciesKey)?.displayName
+                              ?? getDisplayToken(speciesKey.replace("SPECIES_", "")))
+                            .join(", ")}
+                          . See that Pokémon's page for the full caught details.
+                        </>
+                      ) : (
+                        "This Pokémon is not marked as caught."
+                      )}
+                    </p>
                   )}
                 </section>
 
@@ -2128,7 +2188,7 @@ function App() {
             ) : (
               visibleEntries.map((entry) => {
                 const caughtCountForSpecies = caughtCountBySpecies[entry.id] ?? 0;
-                const isCaught = caughtCountForSpecies > 0;
+                const isCaught = caughtCountForSpecies > 0 || ancestorCaughtSpecies.has(entry.id);
                 const details = dataset?.pokemon[entry.id];
                 const cardTypes = details?.types ?? [];
                 const stats = details?.stats;
@@ -2163,7 +2223,7 @@ function App() {
                     />
                     <span className="pokemon-name-row">
                       <span className="pokemon-name">{entry.displayName}</span>
-                      {isCaught ? <span className="caught-count-badge">{caughtCountForSpecies}</span> : null}
+                      {caughtCountForSpecies > 0 ? <span className="caught-count-badge">{caughtCountForSpecies}</span> : null}
                     </span>
                     <div className="pokemon-row-types">
                       {cardTypes.map((type) => (
@@ -2226,12 +2286,23 @@ function App() {
 
             <div className="caught-fields-grid">
               <label className="build-field">
-                Current Species (evolution)
+                Current Species
+                <input
+                  type="text"
+                  value={entries.find((entry) => entry.id === caughtModalCurrentSpecies)?.displayName
+                    ?? getDisplayToken(caughtModalCurrentSpecies.replace("SPECIES_", ""))}
+                  disabled
+                />
+              </label>
+
+              <label className="build-field">
+                Originally Caught As
                 <select
-                  value={caughtModalCurrentSpecies}
-                  onChange={(event) => setCaughtModalCurrentSpecies(event.target.value)}
+                  value={caughtModalStartingSpecies}
+                  onChange={(event) => setCaughtModalStartingSpecies(event.target.value)}
+                  disabled={caughtStartingSpeciesOptions.length <= 1}
                 >
-                  {caughtEvolutionSpeciesOptions.map((speciesKey) => (
+                  {caughtStartingSpeciesOptions.map((speciesKey) => (
                     <option key={speciesKey} value={speciesKey}>
                       {entries.find((entry) => entry.id === speciesKey)?.displayName
                         ?? getDisplayToken(speciesKey.replace("SPECIES_", ""))}

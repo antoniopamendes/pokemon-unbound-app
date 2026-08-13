@@ -103,6 +103,10 @@ export function loadCaughtPokemonMap(): CaughtPokemonMap {
       id,
       originalSpecies,
       currentSpecies,
+      startingSpecies:
+        typeof profile.startingSpecies === "string" && profile.startingSpecies.length > 0
+          ? profile.startingSpecies
+          : currentSpecies,
     } as CaughtPokemonMap[string][number];
 
     if (!migrated[bucketSpecies]) {

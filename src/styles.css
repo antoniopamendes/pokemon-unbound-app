@@ -875,6 +875,13 @@ button.btn-danger:hover {
   background: #fff;
 }
 
+.build-field input:disabled,
+.build-field select:disabled {
+  background: #eef2f6;
+  color: #6b8093;
+  cursor: not-allowed;
+}
+
 .build-list {
   margin-top: 0.6rem;
   display: grid;

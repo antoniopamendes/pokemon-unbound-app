@@ -112,6 +112,7 @@ export type CaughtPokemonProfile = {
   id: string;
   originalSpecies: string;
   currentSpecies: string;
+  startingSpecies: string;
   level: number;
   nature: string;
   ability: string;
