@@ -2152,10 +2152,8 @@ function App() {
                           aria-pressed={isCaught}
                         >
                           {isCaught ? "Caught" : "Catch"}
+                          {isCaught ? <span className="caught-count-badge">{caughtCountForSpecies}</span> : null}
                         </button>
-                        {isCaught ? (
-                          <span className="caught-count-badge">{caughtCountForSpecies}</span>
-                        ) : null}
                       </div>
                     </div>
                     <SpriteImage

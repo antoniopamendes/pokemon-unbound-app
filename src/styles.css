@@ -263,9 +263,13 @@ button.btn-danger:hover {
 
 .catch-btn-group .status-pill {
   margin-left: 0;
+  position: relative;
 }
 
 .caught-count-badge {
+  position: absolute;
+  top: -0.5rem;
+  right: -0.5rem;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -278,6 +282,7 @@ button.btn-danger:hover {
   font-size: 0.65rem;
   font-weight: 700;
   line-height: 1;
+  box-shadow: 0 0 0 2px #ffffff;
 }
 
 .card-sprite {
@@ -1534,8 +1539,7 @@ input[type="number"]::-webkit-inner-spin-button {
   }
 
   button {
-    padding: 0.6rem 1rem;
-    font-size: 0.9rem;
+    font-size: 0.85rem;
   }
 }
 
@@ -1658,10 +1662,7 @@ input[type="number"]::-webkit-inner-spin-button {
   }
 
   button {
-    padding: 0.5rem 1rem;
-    font-size: 0.85rem;
-    min-height: 44px;
-    min-width: 44px;
+    font-size: 0.8rem;
   }
 
   .caught-toggle-btn,
