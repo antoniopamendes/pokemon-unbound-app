@@ -354,6 +354,9 @@ function SpriteImage({
     : <div className={className} />;
 }
 
+// Evo methods that represent alternate battle forms rather than a true species evolution.
+const FORM_EVO_METHODS = new Set(["EVO_MEGA", "EVO_GIGANTAMAX", "EVO_PRIMAL", "EVO_ULTRA_BURST"]);
+
 // ---- Evolution tree renderer ----
 function EvoTree({
   node,
@@ -406,14 +409,32 @@ function EvoTree({
           <span className="evo-card-name">{displayName}</span>
         </button>
 
-        {/* All children (regular + form) in one column */}
-        {node.children.length > 0 && (
-          <div className="evo-tree-row">
-            {node.children.map((child, i) => (
-              <EvoTree key={`${child.species}-${i}`} node={child} selectedSpecies={selectedSpecies} dataset={dataset} onSelect={onSelect} />
-            ))}
-          </div>
-        )}
+        {/* Regular evolutions and alternate forms (Mega/Gigantamax/Primal/Ultra Burst) get separate rows. */}
+        {node.children.length > 0 && (() => {
+          const regularChildren = node.children.filter((child) => !FORM_EVO_METHODS.has(child.method));
+          const formChildren = node.children.filter((child) => FORM_EVO_METHODS.has(child.method));
+          return (
+            <div className="evo-tree-children-groups">
+              {regularChildren.length > 0 && (
+                <div className="evo-tree-row">
+                  {regularChildren.map((child, i) => (
+                    <EvoTree key={`${child.species}-${i}`} node={child} selectedSpecies={selectedSpecies} dataset={dataset} onSelect={onSelect} />
+                  ))}
+                </div>
+              )}
+              {formChildren.length > 0 && (
+                <div className="evo-form-group">
+                  <span className="evo-form-group-label">Alternate Forms</span>
+                  <div className="evo-tree-row">
+                    {formChildren.map((child, i) => (
+                      <EvoTree key={`${child.species}-${i}`} node={child} selectedSpecies={selectedSpecies} dataset={dataset} onSelect={onSelect} />
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        })()}
       </div>
     </div>
   );

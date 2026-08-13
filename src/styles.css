@@ -1152,6 +1152,31 @@ button.btn-danger:hover {
   justify-content: center;
 }
 
+/* Stacks the regular-evolution row above the alternate-forms row for a given node */
+.evo-tree-children-groups {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.evo-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding: 0.4rem 0.5rem;
+  border: 1px dashed #cbd8e4;
+  border-radius: 10px;
+  background: #fbfdff;
+}
+
+.evo-form-group-label {
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: #7a8a99;
+}
+
 
 .evo-arrow-col {
   display: flex;
