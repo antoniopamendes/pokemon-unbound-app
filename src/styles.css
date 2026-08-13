@@ -2086,6 +2086,10 @@ input[type="number"]::-webkit-inner-spin-button {
   gap: 0.5rem;
 }
 
+.team-overview-slot .box-slot {
+  width: 100%;
+}
+
 .team-roster-card {
   border: 1px solid #d9e4ee;
   border-radius: 12px;
