@@ -1,8 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
+import type { DragEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { SpriteImage } from "./App";
 import { CaughtProfileModal } from "./CaughtProfileModal";
 import { fetchUnboundPokedex } from "./pokedex";
+import { NATURE_BY_NAME } from "./pokemonBuild";
+import { calculateCaughtPokemonStats, getNatureModifiers } from "./statCalculator";
 import {
   BOX_COLUMNS,
   BOX_SLOT_COUNT,
@@ -19,6 +22,8 @@ import {
 } from "./storage";
 import { getDisplayToken, getUnboundDataset } from "./unboundData";
 import { useCloudSync } from "./useCloudSync";
+import { getTypeColor, getTypeTextColor } from "./typeColors";
+import { ALL_TYPES, getTypeMatchups } from "./typeEffectiveness";
 import type {
   BoxesData,
   CaughtPokemonMap,
@@ -61,6 +66,7 @@ export default function BoxesPage() {
   const [newProfileSpecies, setNewProfileSpecies] = useState<string | null>(null);
   const [actionLocation, setActionLocation] = useState<SlotLocation | null>(null);
   const [editingProfile, setEditingProfile] = useState<CaughtPokemonProfile | null>(null);
+  const [dragSource, setDragSource] = useState<SlotLocation | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -172,6 +178,64 @@ export default function BoxesPage() {
   const totalCaught = allProfiles.length;
   const totalBoxed = assignedProfileIds.size;
 
+  // Party members with their profile resolved, in slot order (skips empty slots).
+  const partyMembers = useMemo(() => {
+    return partyData
+      .map((profileId) => (profileId ? findProfileById(caughtPokemonMap, profileId) : null))
+      .filter((profile): profile is CaughtPokemonProfile => profile !== null);
+  }, [partyData, caughtPokemonMap]);
+
+  // Each party member's calculated stats (using its species base stats, level, nature, IVs/EVs).
+  const partyMemberStats = useMemo(() => {
+    if (!dataset) return new Map<string, ReturnType<typeof calculateCaughtPokemonStats>>();
+    const map = new Map<string, ReturnType<typeof calculateCaughtPokemonStats>>();
+    for (const profile of partyMembers) {
+      const details = dataset.pokemon[profile.currentSpecies];
+      if (!details) continue;
+      const nature = NATURE_BY_NAME.get(profile.nature);
+      const modifiers = getNatureModifiers(nature?.up ?? null, nature?.down ?? null);
+      map.set(profile.id, calculateCaughtPokemonStats(details.stats, profile.level, profile.ivs, profile.evs, modifiers));
+    }
+    return map;
+  }, [dataset, partyMembers]);
+
+  // Sum of every party member's calculated stats — a quick "team power" overview.
+  const teamStatTotals = useMemo(() => {
+    const totals = { hp: 0, attack: 0, defense: 0, spAttack: 0, spDefense: 0, speed: 0, total: 0 };
+    for (const stats of partyMemberStats.values()) {
+      totals.hp += stats.hp;
+      totals.attack += stats.attack;
+      totals.defense += stats.defense;
+      totals.spAttack += stats.spAttack;
+      totals.spDefense += stats.spDefense;
+      totals.speed += stats.speed;
+      totals.total += stats.total;
+    }
+    return totals;
+  }, [partyMemberStats]);
+
+  // For each attacking type, how many party members are weak/resistant/immune to it —
+  // helps spot team-wide type coverage gaps.
+  const teamTypeCoverage = useMemo(() => {
+    const coverage: Record<string, { weak: number; resist: number; immune: number }> = {};
+    for (const type of ALL_TYPES) {
+      coverage[type] = { weak: 0, resist: 0, immune: 0 };
+    }
+    if (!dataset) return coverage;
+    for (const profile of partyMembers) {
+      const details = dataset.pokemon[profile.currentSpecies];
+      if (!details) continue;
+      const matchups = getTypeMatchups(details.types);
+      for (const type of ALL_TYPES) {
+        const multiplier = matchups[type] ?? 1;
+        if (multiplier === 0) coverage[type].immune += 1;
+        else if (multiplier > 1) coverage[type].weak += 1;
+        else if (multiplier < 1) coverage[type].resist += 1;
+      }
+    }
+    return coverage;
+  }, [dataset, partyMembers]);
+
   const startRenaming = (boxIndex: number) => {
     setBoxNameDraft(boxesData[boxIndex]?.name ?? "");
     setRenamingBoxIndex(boxIndex);
@@ -216,6 +280,25 @@ export default function BoxesPage() {
     } else {
       setPartyData((current) => current.map((slot, s) => (s === location.slotIndex ? profileId : slot)));
     }
+  };
+
+  const locationsEqual = (a: SlotLocation, b: SlotLocation): boolean =>
+    a.kind === "party" && b.kind === "party"
+      ? a.slotIndex === b.slotIndex
+      : a.kind === "box" && b.kind === "box" && a.boxIndex === b.boxIndex && a.slotIndex === b.slotIndex;
+
+  // Swaps whatever is in `source` and `target` (dragging onto an empty slot just moves it).
+  const swapSlots = (source: SlotLocation, target: SlotLocation) => {
+    if (locationsEqual(source, target)) {
+      return;
+    }
+    const sourceId = getSlotProfileId(source);
+    const targetId = getSlotProfileId(target);
+    if (!sourceId) {
+      return;
+    }
+    setSlotProfileId(target, sourceId);
+    setSlotProfileId(source, targetId);
   };
 
   const assignProfileToSlot = (location: SlotLocation, profileId: string) => {
@@ -312,13 +395,27 @@ export default function BoxesPage() {
     const profileId = getSlotProfileId(location);
     const profile = profileId ? findProfileById(caughtPokemonMap, profileId) : null;
     const shapeClass = shape === "circle" ? "box-slot-circle" : "";
+    const isDragOverTarget = Boolean(dragSource) && !locationsEqual(dragSource as SlotLocation, location);
+    const commonDragProps = {
+      onDragOver: (event: DragEvent) => {
+        if (dragSource) event.preventDefault();
+      },
+      onDrop: (event: DragEvent) => {
+        event.preventDefault();
+        if (dragSource) {
+          swapSlots(dragSource, location);
+        }
+        setDragSource(null);
+      },
+    };
     if (!profile) {
       return (
         <button
           key={key}
           type="button"
-          className={`box-slot box-slot-empty ${shapeClass}`}
+          className={`box-slot box-slot-empty ${shapeClass} ${isDragOverTarget ? "box-slot-drop-target" : ""}`}
           onClick={() => setPickerLocation(location)}
+          {...commonDragProps}
         >
           <span className="box-slot-plus">+</span>
         </button>
@@ -330,9 +427,16 @@ export default function BoxesPage() {
       <button
         key={key}
         type="button"
-        className={`box-slot box-slot-filled ${shapeClass}`}
-        title={`${displayName} (Lv. ${profile.level})`}
+        draggable
+        className={`box-slot box-slot-filled ${shapeClass} ${isDragOverTarget ? "box-slot-drop-target" : ""}`}
+        title={`${displayName} (Lv. ${profile.level}) — drag to move`}
         onClick={() => setActionLocation(location)}
+        onDragStart={(event) => {
+          setDragSource(location);
+          event.dataTransfer.effectAllowed = "move";
+        }}
+        onDragEnd={() => setDragSource(null)}
+        {...commonDragProps}
       >
         <SpriteImage speciesKey={profile.currentSpecies} fallbackUrl={spriteUrl} alt={displayName} className="box-sprite" />
         <span className="box-slot-level">Lv{profile.level}</span>
@@ -371,6 +475,89 @@ export default function BoxesPage() {
             )}
           </div>
         </section>
+
+        {partyMembers.length > 0 ? (
+          <section className="team-overview-section">
+            <h2 className="party-title">Team Overview</h2>
+
+            <div className="team-roster">
+              {partyMembers.map((profile) => {
+                const details = dataset?.pokemon[profile.currentSpecies];
+                const stats = partyMemberStats.get(profile.id);
+                const spriteUrl = details?.spriteUrl ?? "";
+                const displayName = displayNameFor(profile.currentSpecies);
+                return (
+                  <div key={profile.id} className="team-roster-card">
+                    <div className="team-roster-card-header">
+                      <SpriteImage speciesKey={profile.currentSpecies} fallbackUrl={spriteUrl} alt={displayName} className="box-sprite" />
+                      <div>
+                        <div className="team-roster-name">{displayName} <span className="muted">Lv. {profile.level}</span></div>
+                        <div className="pokemon-row-types">
+                          {(details?.types ?? []).map((type) => (
+                            <span key={type} className="type-chip" style={{ background: getTypeColor(type), color: getTypeTextColor(type) }}>
+                              {getDisplayToken(type)}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                    {stats ? (
+                      <div className="team-roster-stats">
+                        {([
+                          ["HP", stats.hp], ["Atk", stats.attack], ["Def", stats.defense],
+                          ["SpA", stats.spAttack], ["SpD", stats.spDefense], ["Spe", stats.speed], ["BST", stats.total],
+                        ] as const).map(([label, value]) => (
+                          <span key={label} className="team-roster-stat">{label} <strong>{value}</strong></span>
+                        ))}
+                      </div>
+                    ) : null}
+                    <div className="team-roster-moves">
+                      {profile.moveset.map((moveKey) => (
+                        <span key={moveKey} className="tag-button">{dataset?.moves[moveKey]?.name ?? getDisplayToken(moveKey)}</span>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className="team-totals-card">
+              <h3>Team Stat Totals</h3>
+              <div className="team-roster-stats">
+                {([
+                  ["HP", teamStatTotals.hp], ["Atk", teamStatTotals.attack], ["Def", teamStatTotals.defense],
+                  ["SpA", teamStatTotals.spAttack], ["SpD", teamStatTotals.spDefense], ["Spe", teamStatTotals.speed],
+                  ["Grand Total", teamStatTotals.total],
+                ] as const).map(([label, value]) => (
+                  <span key={label} className="team-roster-stat">{label} <strong>{value}</strong></span>
+                ))}
+              </div>
+            </div>
+
+            <div className="team-type-coverage">
+              <h3>Team Type Coverage</h3>
+              <p className="muted">How many of your party members are weak to, resist, or are immune to each attacking type.</p>
+              <div className="type-coverage-grid">
+                {ALL_TYPES.map((type) => {
+                  const coverage = teamTypeCoverage[type];
+                  return (
+                    <div key={type} className="type-coverage-row">
+                      <span className="type-chip" style={{ background: getTypeColor(type), color: getTypeTextColor(type) }}>
+                        {getDisplayToken(type)}
+                      </span>
+                      <span className="type-coverage-counts">
+                        {coverage.weak > 0 ? <span className="type-coverage-weak">{coverage.weak} weak</span> : null}
+                        {coverage.resist > 0 ? <span className="type-coverage-resist">{coverage.resist} resist</span> : null}
+                        {coverage.immune > 0 ? <span className="type-coverage-immune">{coverage.immune} immune</span> : null}
+                        {coverage.weak === 0 && coverage.resist === 0 && coverage.immune === 0 ? <span className="muted">—</span> : null}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </section>
+        ) : null}
 
         {unassignedProfiles.length > 0 ? (
           <section className="unassigned-section">

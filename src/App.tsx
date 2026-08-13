@@ -24,6 +24,7 @@ import { getDisplayToken, getUnboundDataset } from "./unboundData";
 import { useCloudSync } from "./useCloudSync";
 import { getNatureModifiers } from "./statCalculator";
 import { getTypeColor, getTypeTextColor } from "./typeColors";
+import { bucketizeMatchups, getTypeMatchups } from "./typeEffectiveness";
 import {
   BUILD_STATS,
   NATURES,
@@ -506,6 +507,7 @@ function App() {
   const [caughtOnly, setCaughtOnly] = useState(false);
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
+  const [compactView, setCompactView] = useState<boolean>(() => localStorage.getItem("unbound-tracker-compact-view") === "1");
   const [minBaseStat, setMinBaseStat] = useState<number>(0);
   const [maxBaseStat, setMaxBaseStat] = useState<number>(800);
   const [statFilters, setStatFilters] = useState<Record<keyof StatSpread, { min: number; max: number }>>({
@@ -547,6 +549,10 @@ function App() {
   });
   const [accountMenuOpen, setAccountMenuOpen] = useState(false);
   const [accountEmail, setAccountEmail] = useState("");
+
+  useEffect(() => {
+    localStorage.setItem("unbound-tracker-compact-view", compactView ? "1" : "0");
+  }, [compactView]);
 
   useEffect(() => {
     const run = async () => {
@@ -813,6 +819,11 @@ function App() {
   const selectedEntry = useMemo(
     () => entries.find((entry) => entry.id === selectedSpecies) ?? null,
     [entries, selectedSpecies],
+  );
+
+  const selectedTypeMatchups = useMemo(
+    () => bucketizeMatchups(getTypeMatchups(selectedDetails?.types ?? [])),
+    [selectedDetails],
   );
 
   const moveKeyBySlug = useMemo(() => {
@@ -1193,6 +1204,15 @@ function App() {
               aria-expanded={showFilters}
             >
               {showFilters ? "▾ Hide filters" : "▸ Show filters"}
+            </button>
+            <button
+              type="button"
+              className={`filters-toggle-btn ${compactView ? "active" : ""}`}
+              onClick={() => setCompactView((current) => !current)}
+              aria-pressed={compactView}
+              title="Hide stats to fit more Pokémon per row"
+            >
+              {compactView ? "▾ Detailed view" : "▸ Compact view"}
             </button>
           </div>
 
@@ -1587,6 +1607,77 @@ function App() {
                   </div>
                 </section>
 
+                <section className={`details-section ${collapsedSections.has("type-matchups") ? "collapsed" : ""}`}>
+                  <div className="details-section-header">
+                    <button type="button" className="section-toggle" onClick={() => toggleSection("type-matchups")}>
+                      <span className={`chevron ${collapsedSections.has("type-matchups") ? "collapsed" : ""}`}>▾</span>
+                      <h3>Type Matchups</h3>
+                    </button>
+                  </div>
+                  <div className="matchup-grid">
+                    <div className="matchup-row">
+                      <span className="matchup-row-label">Weak to (4x)</span>
+                      <span className="tag-wrap">
+                        {selectedTypeMatchups.quadWeak.length > 0 ? (
+                          selectedTypeMatchups.quadWeak.map((type) => (
+                            <span key={type} className="type-chip" style={{ background: getTypeColor(type), color: getTypeTextColor(type) }}>
+                              {getDisplayToken(type)}
+                            </span>
+                          ))
+                        ) : <span className="muted">None</span>}
+                      </span>
+                    </div>
+                    <div className="matchup-row">
+                      <span className="matchup-row-label">Weak to (2x)</span>
+                      <span className="tag-wrap">
+                        {selectedTypeMatchups.weak.length > 0 ? (
+                          selectedTypeMatchups.weak.map((type) => (
+                            <span key={type} className="type-chip" style={{ background: getTypeColor(type), color: getTypeTextColor(type) }}>
+                              {getDisplayToken(type)}
+                            </span>
+                          ))
+                        ) : <span className="muted">None</span>}
+                      </span>
+                    </div>
+                    <div className="matchup-row">
+                      <span className="matchup-row-label">Resists (0.5x)</span>
+                      <span className="tag-wrap">
+                        {selectedTypeMatchups.resist.length > 0 ? (
+                          selectedTypeMatchups.resist.map((type) => (
+                            <span key={type} className="type-chip" style={{ background: getTypeColor(type), color: getTypeTextColor(type) }}>
+                              {getDisplayToken(type)}
+                            </span>
+                          ))
+                        ) : <span className="muted">None</span>}
+                      </span>
+                    </div>
+                    <div className="matchup-row">
+                      <span className="matchup-row-label">Resists (0.25x)</span>
+                      <span className="tag-wrap">
+                        {selectedTypeMatchups.quadResist.length > 0 ? (
+                          selectedTypeMatchups.quadResist.map((type) => (
+                            <span key={type} className="type-chip" style={{ background: getTypeColor(type), color: getTypeTextColor(type) }}>
+                              {getDisplayToken(type)}
+                            </span>
+                          ))
+                        ) : <span className="muted">None</span>}
+                      </span>
+                    </div>
+                    <div className="matchup-row">
+                      <span className="matchup-row-label">Immune to</span>
+                      <span className="tag-wrap">
+                        {selectedTypeMatchups.immune.length > 0 ? (
+                          selectedTypeMatchups.immune.map((type) => (
+                            <span key={type} className="type-chip" style={{ background: getTypeColor(type), color: getTypeTextColor(type) }}>
+                              {getDisplayToken(type)}
+                            </span>
+                          ))
+                        ) : <span className="muted">None</span>}
+                      </span>
+                    </div>
+                  </div>
+                </section>
+
                 <section className={`details-section ${collapsedSections.has("evolution") ? "collapsed" : ""}`}>
                   <div className="details-section-header">
                     <button type="button" className="section-toggle" onClick={() => toggleSection("evolution")}>
@@ -1903,7 +1994,7 @@ function App() {
             )}
           </section>
         ) : (
-          <section className="pokedex-grid">
+          <section className={`pokedex-grid ${compactView ? "pokedex-grid-compact" : ""}`}>
             {filteredEntries.length === 0 ? (
               <p className="muted">No Pokémon match the current filters.</p>
             ) : (
@@ -1917,7 +2008,7 @@ function App() {
                   <Link
                     key={entry.id}
                     to={`/pokemon/${entry.id}`}
-                    className={`pokemon-card ${isCaught ? "caught" : ""}`}
+                    className={`pokemon-card ${isCaught ? "caught" : ""} ${compactView ? "pokemon-card-compact" : ""}`}
                   >
                     <div className="pokemon-card-top">
                       <span className="dex-order">#{entry.dexOrder}</span>
@@ -1958,7 +2049,7 @@ function App() {
                         </span>
                       ))}
                     </div>
-                    {stats ? (
+                    {stats && !compactView ? (
                       <div className="card-stats">
                         <div className="card-bst">
                           BST <strong>{stats.total}</strong>
