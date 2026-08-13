@@ -779,7 +779,7 @@ function App() {
 
   const totalCount = entries.length;
   const progressPercentage =
-    totalCount === 0 ? 0 : Math.round((caughtCount / totalCount) * 100);
+    totalCount === 0 ? 0 : Math.round((caughtCount / totalCount) * 10000) / 100;
 
   const openProfileModalForEdit = (profile: CaughtPokemonProfile) => {
     setProfileModalSpecies(profile.originalSpecies);
@@ -1175,7 +1175,7 @@ function App() {
           <>
         <section className="progress-card">
           <strong>
-            Progress: {caughtCount}/{totalCount} ({progressPercentage}%)
+            Progress: {caughtCount}/{totalCount} ({progressPercentage.toFixed(2)}%)
           </strong>
         </section>
 

@@ -67,6 +67,7 @@ export default function BoxesPage() {
   const [actionLocation, setActionLocation] = useState<SlotLocation | null>(null);
   const [editingProfile, setEditingProfile] = useState<CaughtPokemonProfile | null>(null);
   const [dragSource, setDragSource] = useState<SlotLocation | null>(null);
+  const [teamOverviewCollapsed, setTeamOverviewCollapsed] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -476,117 +477,117 @@ export default function BoxesPage() {
           <strong>Boxed: {totalBoxed}/{totalCaught} owned Pokemon</strong>
         </section>
 
-        <section className="party-section">
-          <h2 className="party-title">Party</h2>
-          <div className="party-grid">
-            {Array.from({ length: PARTY_SLOT_COUNT }, (_, slotIndex) =>
-              renderSlot({ kind: "party", slotIndex }, `party-${slotIndex}`, "circle"),
-            )}
+        <section className="team-overview-section">
+          <div className="details-section-header">
+            <button type="button" className="section-toggle" onClick={() => setTeamOverviewCollapsed((current) => !current)}>
+              <span className={`chevron ${teamOverviewCollapsed ? "collapsed" : ""}`}>▾</span>
+              <h2 className="party-title">Team Overview</h2>
+            </button>
           </div>
-        </section>
 
-        {partyMembers.length > 0 ? (
-          <section className="team-overview-section">
-            <h2 className="party-title">Team Overview</h2>
-
-            <div className="team-roster">
-              {partyMembers.map((profile) => {
-                const details = dataset?.pokemon[profile.currentSpecies];
-                const stats = partyMemberStats.get(profile.id);
-                const spriteUrl = details?.spriteUrl ?? "";
-                const displayName = displayNameFor(profile.currentSpecies);
-                return (
-                  <div key={profile.id} className="team-roster-card">
-                    <div className="team-roster-card-header">
-                      <SpriteImage speciesKey={profile.currentSpecies} fallbackUrl={spriteUrl} alt={displayName} className="box-sprite" />
-                      <div>
-                        <div className="team-roster-name">{displayName} <span className="muted">Lv. {profile.level}</span></div>
-                        <div className="pokemon-row-types">
-                          {(details?.types ?? []).map((type) => (
-                            <span key={type} className="type-chip" style={{ background: getTypeColor(type), color: getTypeTextColor(type) }}>
-                              {getDisplayToken(type)}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                    {stats ? (
-                      <div className="team-roster-stats">
-                        {([
-                          ["HP", stats.hp], ["Atk", stats.attack], ["Def", stats.defense],
-                          ["SpA", stats.spAttack], ["SpD", stats.spDefense], ["Spe", stats.speed], ["BST", stats.total],
-                        ] as const).map(([label, value]) => (
-                          <span key={label} className="team-roster-stat">{label} <strong>{value}</strong></span>
+          <div className="party-grid team-overview-grid">
+            {Array.from({ length: PARTY_SLOT_COUNT }, (_, slotIndex) => {
+              const location: SlotLocation = { kind: "party", slotIndex };
+              const profileId = getSlotProfileId(location);
+              const profile = profileId ? findProfileById(caughtPokemonMap, profileId) : null;
+              const details = profile ? dataset?.pokemon[profile.currentSpecies] : null;
+              const stats = profile ? partyMemberStats.get(profile.id) : null;
+              const displayName = profile ? displayNameFor(profile.currentSpecies) : null;
+              return (
+                <div key={slotIndex} className="team-overview-slot">
+                  {renderSlot(location, `party-${slotIndex}`, "circle")}
+                  {!teamOverviewCollapsed && profile ? (
+                    <div className="team-roster-card team-roster-card-vertical">
+                      <div className="team-roster-name">{displayName} <span className="muted">Lv. {profile.level}</span></div>
+                      <div className="pokemon-row-types">
+                        {(details?.types ?? []).map((type) => (
+                          <span key={type} className="type-chip" style={{ background: getTypeColor(type), color: getTypeTextColor(type) }}>
+                            {getDisplayToken(type)}
+                          </span>
                         ))}
                       </div>
-                    ) : null}
-                    <div className="team-roster-moves">
-                      {profile.moveset.map((moveKey) => (
-                        <span key={moveKey} className="tag-button">{dataset?.moves[moveKey]?.name ?? getDisplayToken(moveKey)}</span>
-                      ))}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-
-            <div className="team-totals-card">
-              <h3>Team Stat Totals</h3>
-              <div className="stats-grid">
-                {(() => {
-                  const rows: [string, number][] = [
-                    ["HP", teamStatTotals.hp], ["Atk", teamStatTotals.attack], ["Def", teamStatTotals.defense],
-                    ["SpA", teamStatTotals.spAttack], ["SpD", teamStatTotals.spDefense], ["Spe", teamStatTotals.speed],
-                  ];
-                  const maxValue = Math.max(1, ...rows.map(([, value]) => value));
-                  return (
-                    <>
-                      {rows.map(([label, value]) => (
-                        <div key={label} className="stat-row">
-                          <span className="stat-label">{label}</span>
-                          <span className="stat-bar-wrap">
-                            <span className="stat-bar" style={{ width: `${Math.min(100, Math.round((value / maxValue) * 100))}%` }} />
-                          </span>
-                          <span className="stat-value">{value}</span>
+                      {stats ? (
+                        <div className="team-roster-stats">
+                          {([
+                            ["HP", stats.hp], ["Atk", stats.attack], ["Def", stats.defense],
+                            ["SpA", stats.spAttack], ["SpD", stats.spDefense], ["Spe", stats.speed], ["BST", stats.total],
+                          ] as const).map(([label, value]) => (
+                            <span key={label} className="team-roster-stat">{label} <strong>{value}</strong></span>
+                          ))}
                         </div>
-                      ))}
-                      <div className="stat-row">
-                        <span className="stat-label">Total</span>
-                        <span className="stat-bar-wrap">
-                          <span className="stat-bar" style={{ width: "100%" }} />
-                        </span>
-                        <span className="stat-value">{teamStatTotals.total}</span>
+                      ) : null}
+                      <div className="team-roster-moves">
+                        {profile.moveset.map((moveKey) => (
+                          <span key={moveKey} className="tag-button">{dataset?.moves[moveKey]?.name ?? getDisplayToken(moveKey)}</span>
+                        ))}
                       </div>
-                    </>
-                  );
-                })()}
-              </div>
-            </div>
-
-            <div className="team-type-coverage">
-              <h3>Team Type Coverage</h3>
-              <p className="muted">How many of your party members are weak to, resist, or are immune to each attacking type.</p>
-              <div className="type-coverage-grid">
-                {ALL_TYPES.map((type) => {
-                  const coverage = teamTypeCoverage[type];
-                  return (
-                    <div key={type} className="type-coverage-row">
-                      <span className="type-chip" style={{ background: getTypeColor(type), color: getTypeTextColor(type) }}>
-                        {getDisplayToken(type)}
-                      </span>
-                      <span className="type-coverage-counts">
-                        {coverage.weak > 0 ? <span className="type-coverage-weak">{coverage.weak} weak</span> : null}
-                        {coverage.resist > 0 ? <span className="type-coverage-resist">{coverage.resist} resist</span> : null}
-                        {coverage.immune > 0 ? <span className="type-coverage-immune">{coverage.immune} immune</span> : null}
-                        {coverage.weak === 0 && coverage.resist === 0 && coverage.immune === 0 ? <span className="muted">—</span> : null}
-                      </span>
                     </div>
-                  );
-                })}
+                  ) : null}
+                </div>
+              );
+            })}
+          </div>
+
+          {!teamOverviewCollapsed && partyMembers.length > 0 ? (
+            <>
+              <div className="team-totals-card">
+                <h3>Team Stat Totals</h3>
+                <div className="stats-grid">
+                  {(() => {
+                    const rows: [string, number][] = [
+                      ["HP", teamStatTotals.hp], ["Atk", teamStatTotals.attack], ["Def", teamStatTotals.defense],
+                      ["SpA", teamStatTotals.spAttack], ["SpD", teamStatTotals.spDefense], ["Spe", teamStatTotals.speed],
+                    ];
+                    const maxValue = Math.max(1, ...rows.map(([, value]) => value));
+                    return (
+                      <>
+                        {rows.map(([label, value]) => (
+                          <div key={label} className="stat-row">
+                            <span className="stat-label">{label}</span>
+                            <span className="stat-bar-wrap">
+                              <span className="stat-bar" style={{ width: `${Math.min(100, Math.round((value / maxValue) * 100))}%` }} />
+                            </span>
+                            <span className="stat-value">{value}</span>
+                          </div>
+                        ))}
+                        <div className="stat-row">
+                          <span className="stat-label">Total</span>
+                          <span className="stat-bar-wrap">
+                            <span className="stat-bar" style={{ width: "100%" }} />
+                          </span>
+                          <span className="stat-value">{teamStatTotals.total}</span>
+                        </div>
+                      </>
+                    );
+                  })()}
+                </div>
               </div>
-            </div>
-          </section>
-        ) : null}
+
+              <div className="team-type-coverage">
+                <h3>Team Type Coverage</h3>
+                <p className="muted">How many of your party members are weak to, resist, or are immune to each attacking type.</p>
+                <div className="type-coverage-grid">
+                  {ALL_TYPES.map((type) => {
+                    const coverage = teamTypeCoverage[type];
+                    return (
+                      <div key={type} className="type-coverage-row">
+                        <span className="type-chip" style={{ background: getTypeColor(type), color: getTypeTextColor(type) }}>
+                          {getDisplayToken(type)}
+                        </span>
+                        <span className="type-coverage-counts">
+                          {coverage.weak > 0 ? <span className="type-coverage-weak">{coverage.weak} weak</span> : null}
+                          {coverage.resist > 0 ? <span className="type-coverage-resist">{coverage.resist} resist</span> : null}
+                          {coverage.immune > 0 ? <span className="type-coverage-immune">{coverage.immune} immune</span> : null}
+                          {coverage.weak === 0 && coverage.resist === 0 && coverage.immune === 0 ? <span className="muted">—</span> : null}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </>
+          ) : null}
+        </section>
 
         {unassignedProfiles.length > 0 ? (
           <section className="unassigned-section">
@@ -786,6 +787,7 @@ export default function BoxesPage() {
               <span className="tag-button">{actionProfile.item ? (dataset?.items[actionProfile.item]?.name ?? getDisplayToken(actionProfile.item)) : "—"}</span>
             </div>
 
+            <h4 className="pokemon-info-subheading">Stats</h4>
             {actionProfileStats ? (
               <div className="stats-grid">
                 {([
@@ -804,10 +806,26 @@ export default function BoxesPage() {
               </div>
             ) : null}
 
-            <div className="team-roster-moves">
-              {actionProfile.moveset.map((moveKey) => (
-                <span key={moveKey} className="tag-button">{dataset?.moves[moveKey]?.name ?? getDisplayToken(moveKey)}</span>
-              ))}
+            <h4 className="pokemon-info-subheading">Moveset</h4>
+            <div className="moveset-grid">
+              {actionProfile.moveset.map((moveKey) => {
+                const move = dataset?.moves[moveKey];
+                return (
+                  <div key={moveKey} className="moveset-card">
+                    <div className="moveset-card-name">{move?.name ?? getDisplayToken(moveKey)}</div>
+                    <div className="moveset-card-type">
+                      <span className="type-chip" style={{ background: getTypeColor(move?.type ?? ""), color: getTypeTextColor(move?.type ?? "") }}>
+                        {getDisplayToken(move?.type ?? "—")}
+                      </span>
+                    </div>
+                    <div className="moveset-card-stats">
+                      <span>PP {move?.pp ?? "—"}</span>
+                      <span>Acc {move && move.accuracy > 0 ? `${move.accuracy}%` : "—"}</span>
+                      <span>Pwr {move && move.power > 0 ? move.power : "—"}</span>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
 
             <div className="box-action-buttons">
@@ -826,7 +844,7 @@ export default function BoxesPage() {
                 className="account-btn"
                 onClick={() => navigate(`/pokemon/${actionProfile.currentSpecies}`)}
               >
-                View Species Page
+                View Pokemon Page
               </button>
               <button
                 type="button"
