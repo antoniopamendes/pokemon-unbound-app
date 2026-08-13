@@ -27,7 +27,6 @@ import {
   NATURES,
   NATURE_BY_NAME,
   emptySpread,
-  findAncestorPath,
   formatNatureLabel,
   sumSpread,
   toSlug,
@@ -664,49 +663,8 @@ function App() {
     return counts;
   }, [caughtPokemonMap]);
 
-  // Species marked as caught only because they're an earlier evolution stage of a
-  // registered catch (e.g. Bulbasaur/Ivysaur when a Venasaur was caught starting as Bulbasaur).
-  // These get the greenish "caught" styling but never their own count badge.
-  const ancestorCaughtSpecies = useMemo(() => {
-    const marked = new Set<string>();
-    if (!dataset) return marked;
-    Object.values(caughtPokemonMap).flat().forEach((profile) => {
-      const startingSpecies = profile.startingSpecies || profile.currentSpecies;
-      if (startingSpecies === profile.currentSpecies) return;
-      const details = dataset.pokemon[profile.currentSpecies];
-      const path = findAncestorPath(details?.evolutions ?? null, profile.currentSpecies);
-      const startIdx = path.indexOf(startingSpecies);
-      if (startIdx === -1) return;
-      for (let i = startIdx; i < path.length - 1; i += 1) {
-        marked.add(path[i]);
-      }
-    });
-    return marked;
-  }, [caughtPokemonMap, dataset]);
-
-  // Maps an ancestor-only species to the final (currentSpecies) forms that were registered as having evolved from it.
-  const ancestorCaughtSources = useMemo(() => {
-    const sources = new Map<string, Set<string>>();
-    if (!dataset) return sources;
-    Object.values(caughtPokemonMap).flat().forEach((profile) => {
-      const startingSpecies = profile.startingSpecies || profile.currentSpecies;
-      if (startingSpecies === profile.currentSpecies) return;
-      const details = dataset.pokemon[profile.currentSpecies];
-      const path = findAncestorPath(details?.evolutions ?? null, profile.currentSpecies);
-      const startIdx = path.indexOf(startingSpecies);
-      if (startIdx === -1) return;
-      for (let i = startIdx; i < path.length - 1; i += 1) {
-        if (!sources.has(path[i])) sources.set(path[i], new Set());
-        sources.get(path[i])!.add(profile.currentSpecies);
-      }
-    });
-    return sources;
-  }, [caughtPokemonMap, dataset]);
-
   const isSpeciesRegistered = (speciesId: string) =>
-    Boolean(caughtSpeciesMap[speciesId]) ||
-    (caughtCountBySpecies[speciesId] ?? 0) > 0 ||
-    ancestorCaughtSpecies.has(speciesId);
+    Boolean(caughtSpeciesMap[speciesId]) || (caughtCountBySpecies[speciesId] ?? 0) > 0;
 
   const toggleCaughtSpecies = (speciesId: string) => {
     setCaughtSpeciesMap((current) => {
@@ -760,7 +718,7 @@ function App() {
 
       return matchesName && matchesCaught && matchesType && matchesBaseStat && matchesIndividualStats;
     });
-  }, [entries, search, caughtOnly, caughtCountBySpecies, ancestorCaughtSpecies, selectedTypes, dataset, minBaseStat, maxBaseStat, statFilters]);
+  }, [entries, search, caughtOnly, caughtCountBySpecies, selectedTypes, dataset, minBaseStat, maxBaseStat, statFilters]);
 
   const [visibleCount, setVisibleCount] = useState(GRID_PAGE_SIZE);
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
@@ -794,7 +752,7 @@ function App() {
 
   const caughtCount = useMemo(
     () => entries.filter((entry) => isSpeciesRegistered(entry.id)).length,
-    [entries, caughtCountBySpecies, ancestorCaughtSpecies],
+    [entries, caughtCountBySpecies],
   );
 
   const totalCount = entries.length;
@@ -1674,21 +1632,8 @@ function App() {
                     </div>
                   ) : (
                     <p className="muted">
-                      {selectedSpecies && ancestorCaughtSources.has(selectedSpecies) ? (
-                        <>
-                          Registered as an earlier evolution stage of{" "}
-                          {[...ancestorCaughtSources.get(selectedSpecies)!]
-                            .map((speciesKey) => entries.find((entry) => entry.id === speciesKey)?.displayName
-                              ?? getDisplayToken(speciesKey.replace("SPECIES_", "")))
-                            .join(", ")}
-                          . See that Pokémon's page for the full caught details.
-                        </>
-                      ) : (
-                        <>
-                          This Pokémon has no owned instances yet. Add it to your{" "}
-                          <Link to="/boxes">Pokedex Boxes</Link> to record its stats (requires marking it as caught first).
-                        </>
-                      )}
+                      This Pokémon has no owned instances yet. Add it to your{" "}
+                      <Link to="/boxes">Pokedex Boxes</Link> to record its stats (requires marking it as caught first).
                     </p>
                   )}
                 </section>
@@ -2084,7 +2029,7 @@ function App() {
             ) : (
               visibleEntries.map((entry) => {
                 const caughtCountForSpecies = caughtCountBySpecies[entry.id] ?? 0;
-                const isCaught = Boolean(caughtSpeciesMap[entry.id]) || caughtCountForSpecies > 0 || ancestorCaughtSpecies.has(entry.id);
+                const isCaught = Boolean(caughtSpeciesMap[entry.id]) || caughtCountForSpecies > 0;
                 const details = dataset?.pokemon[entry.id];
                 const cardTypes = details?.types ?? [];
                 const stats = details?.stats;

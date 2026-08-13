@@ -229,8 +229,7 @@ export default function BoxesPage() {
   };
 
   // Fully releases the owned Pokémon: removes it from whichever slot holds it (if any) and
-  // deletes its profile entirely (so any earlier evolution stages only marked "caught" via this
-  // profile's startingSpecies stop being auto-marked too).
+  // deletes its profile entirely.
   const releaseProfileById = (profileId: string) => {
     if (!window.confirm("Release this Pokémon? This permanently deletes its recorded stats.")) {
       return;

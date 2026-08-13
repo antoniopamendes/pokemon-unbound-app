@@ -7,7 +7,6 @@ import {
   NATURES,
   NATURE_BY_NAME,
   emptySpread,
-  findAncestorPath,
   formatNatureLabel,
   sumSpread,
   toSlug,
@@ -17,7 +16,7 @@ import type { CaughtPokemonProfile, PokemonEntry, StatSpread, UnboundDataset } f
 type Props = {
   dataset: UnboundDataset;
   entries: PokemonEntry[];
-  /** The species this profile is being registered/edited for (its evolution chain drives "Originally Caught As"). */
+  /** The species this profile is being registered/edited for. */
   originalSpecies: string;
   /** Pass an existing profile to edit it in place; omit to create a brand-new owned Pokémon. */
   initialProfile?: CaughtPokemonProfile | null;
@@ -32,9 +31,6 @@ type Props = {
  */
 export function CaughtProfileModal({ dataset, entries, originalSpecies, initialProfile, onSave, onClose }: Props) {
   const currentSpecies = initialProfile?.currentSpecies || originalSpecies;
-  const [startingSpecies, setStartingSpecies] = useState<string>(
-    initialProfile?.startingSpecies || currentSpecies,
-  );
   const [level, setLevel] = useState<number>(initialProfile?.level ?? 1);
   const [nature, setNature] = useState<string>(initialProfile?.nature ?? NATURES[0].name);
   const [ability, setAbility] = useState<string>(initialProfile?.ability ?? "");
@@ -89,11 +85,6 @@ export function CaughtProfileModal({ dataset, entries, originalSpecies, initialP
   const tutorMoveKeys = useMemo(
     () => tutorMoveSlugs.map((slug) => moveKeyBySlug.get(slug)).filter((key): key is string => Boolean(key)),
     [tutorMoveSlugs, moveKeyBySlug],
-  );
-
-  const startingSpeciesOptions = useMemo(
-    () => findAncestorPath(details?.evolutions ?? null, currentSpecies),
-    [details, currentSpecies],
   );
 
   const abilityOptions = useMemo(() => {
@@ -193,7 +184,6 @@ export function CaughtProfileModal({ dataset, entries, originalSpecies, initialP
       id: initialProfile?.id ?? `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
       originalSpecies: initialProfile?.originalSpecies ?? originalSpecies,
       currentSpecies,
-      startingSpecies: startingSpecies || currentSpecies,
       level: Math.max(1, Math.min(100, level)),
       nature,
       ability,
@@ -221,22 +211,6 @@ export function CaughtProfileModal({ dataset, entries, originalSpecies, initialP
                 ?? getDisplayToken(currentSpecies.replace("SPECIES_", ""))}
               disabled
             />
-          </label>
-
-          <label className="build-field">
-            Originally Caught As
-            <select
-              value={startingSpecies}
-              onChange={(event) => setStartingSpecies(event.target.value)}
-              disabled={startingSpeciesOptions.length <= 1}
-            >
-              {startingSpeciesOptions.map((speciesKey) => (
-                <option key={speciesKey} value={speciesKey}>
-                  {entries.find((entry) => entry.id === speciesKey)?.displayName
-                    ?? getDisplayToken(speciesKey.replace("SPECIES_", ""))}
-                </option>
-              ))}
-            </select>
           </label>
 
           <label className="build-field">
