@@ -324,7 +324,7 @@ async function resolveSpriteObjectUrl(speciesKey: string, fallbackUrl: string): 
 }
 
 // ---- Sprite image with async fetch ----
-function SpriteImage({
+export function SpriteImage({
   speciesKey,
   fallbackUrl,
   alt,
@@ -1383,7 +1383,9 @@ function App() {
               <h1>Pokemon Unbound Tracker</h1>
               <p className="subtitle">Simple Pokedex companion with cached Unbound data.</p>
             </div>
-            {cloudSync.isCloudEnabled && (
+            <div className="header-actions">
+              <Link to="/boxes" className="account-btn">Pokedex Boxes</Link>
+              {cloudSync.isCloudEnabled && (
               <div className="account-widget">
                 {cloudSync.user ? (
                   <div className="account-signed-in">
@@ -1443,6 +1445,7 @@ function App() {
                 )}
               </div>
             )}
+            </div>
           </div>
         </header>
 

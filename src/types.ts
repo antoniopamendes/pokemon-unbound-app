@@ -124,3 +124,16 @@ export type CaughtPokemonProfile = {
 };
 
 export type CaughtPokemonMap = Record<string, CaughtPokemonProfile[]>;
+
+// ---- Pokedex Boxes (PC storage) ----
+
+/** A single storage slot: the id of the caught profile stored there, or empty. */
+export type BoxSlot = string | null;
+
+export type PokemonBox = {
+  name: string;
+  slots: BoxSlot[];
+};
+
+export type BoxesData = PokemonBox[];
+

@@ -1,8 +1,24 @@
-import type { BuildMap, CaughtPokemonMap } from "./types";
+import type { BoxesData, BuildMap, CaughtPokemonMap, PokemonBox } from "./types";
 
 const STORAGE_KEY = "unbound-tracker-caught-v1";
 const BUILD_STORAGE_KEY = "unbound-tracker-builds-v1";
 const CAUGHT_PROFILE_STORAGE_KEY = "unbound-tracker-caught-profile-v1";
+const BOXES_STORAGE_KEY = "unbound-tracker-boxes-v1";
+
+// Standard Pokemon PC Box dimensions: 6 columns x 5 rows.
+export const BOX_COLUMNS = 6;
+export const BOX_ROWS = 5;
+export const BOX_SLOT_COUNT = BOX_COLUMNS * BOX_ROWS;
+const DEFAULT_BOX_COUNT = 12;
+
+function createEmptyBox(index: number): PokemonBox {
+  return { name: `Box ${index + 1}`, slots: new Array(BOX_SLOT_COUNT).fill(null) };
+}
+
+function createDefaultBoxes(): BoxesData {
+  return Array.from({ length: DEFAULT_BOX_COUNT }, (_, i) => createEmptyBox(i));
+}
+
 
 export type CaughtMap = Record<string, boolean>;
 
@@ -137,3 +153,44 @@ export function loadCaughtPokemonMap(): CaughtPokemonMap {
 export function saveCaughtPokemonMap(value: CaughtPokemonMap): void {
   localStorage.setItem(CAUGHT_PROFILE_STORAGE_KEY, JSON.stringify(value));
 }
+
+export function loadBoxesData(): BoxesData {
+  const raw = localStorage.getItem(BOXES_STORAGE_KEY);
+  if (!raw) {
+    return createDefaultBoxes();
+  }
+
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(raw) as unknown;
+  } catch (error) {
+    console.warn("Box data is corrupted and will be reset.", error);
+    return createDefaultBoxes();
+  }
+
+  if (!Array.isArray(parsed) || parsed.length === 0) {
+    console.warn("Box data format is invalid and will be reset.");
+    return createDefaultBoxes();
+  }
+
+  return parsed.map((box, i) => {
+    const rawBox = box as Partial<PokemonBox> | null;
+    const slots = Array.isArray(rawBox?.slots) ? rawBox!.slots.slice(0, BOX_SLOT_COUNT) : [];
+    while (slots.length < BOX_SLOT_COUNT) {
+      slots.push(null);
+    }
+    return {
+      name: typeof rawBox?.name === "string" && rawBox.name.length > 0 ? rawBox.name : `Box ${i + 1}`,
+      slots: slots.map((slot) => (typeof slot === "string" && slot.length > 0 ? slot : null)),
+    };
+  });
+}
+
+export function saveBoxesData(value: BoxesData): void {
+  localStorage.setItem(BOXES_STORAGE_KEY, JSON.stringify(value));
+}
+
+export function createNewBox(index: number): PokemonBox {
+  return createEmptyBox(index);
+}
+

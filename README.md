@@ -11,6 +11,7 @@ Detailed Unbound Pokedex tracker with:
 - local progress persistence
 - Search and caught-only filter
 - Per-Pokemon details: base stats, level-up and egg moves, catch locations, abilities, held items, evolutions
+- Pokedex Boxes: PC-style storage (6x5 grid per box) for organizing your caught Pokemon
 - Move/ability/item detail inspector
 - Persistent local cache for fetched Unbound data and sprite images
 

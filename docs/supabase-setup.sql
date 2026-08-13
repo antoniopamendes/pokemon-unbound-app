@@ -6,8 +6,13 @@ create table if not exists public.user_data (
   user_id uuid primary key references auth.users (id) on delete cascade,
   caught_pokemon_map jsonb not null default '{}'::jsonb,
   build_map jsonb not null default '{}'::jsonb,
+  boxes_data jsonb not null default '[]'::jsonb,
   updated_at timestamptz not null default now()
 );
+
+-- If you already created this table before Pokedex Boxes existed, run this too:
+alter table public.user_data add column if not exists boxes_data jsonb not null default '[]'::jsonb;
+
 
 alter table public.user_data enable row level security;
 
