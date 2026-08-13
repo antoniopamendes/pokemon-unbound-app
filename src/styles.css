@@ -599,6 +599,10 @@ button.btn-danger:hover {
   padding: 0.25rem 0.55rem;
   font-size: 0.85rem;
   cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .tag-button:hover {
@@ -801,6 +805,7 @@ button.btn-danger:hover {
 
 .move-row {
   cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .move-row:hover td {

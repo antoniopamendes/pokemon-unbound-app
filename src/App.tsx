@@ -94,8 +94,12 @@ function usePopover() {
   const [pos, setPos] = useState<{ x: number; y: number } | null>(null);
   const [content, setContent] = useState<PopoverContent | null>(null);
   const [liveDesc, setLiveDesc] = useState<string>("");
+  const [pinned, setPinned] = useState(false);
+  const activeKeyRef = useRef<string | null>(null);
   const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const fetchAbort = useRef<{ cancelled: boolean }>({ cancelled: false });
+
+  const contentKey = (c: PopoverContent) => `${c.kind}-${c.info.key}`;
 
   const show = (e: React.MouseEvent, c: PopoverContent) => {
     if (hideTimer.current) clearTimeout(hideTimer.current);
@@ -130,14 +134,51 @@ function usePopover() {
     setPos({ x: e.clientX, y: e.clientY });
   };
 
+  const closeNow = () => {
+    if (hideTimer.current) clearTimeout(hideTimer.current);
+    fetchAbort.current.cancelled = true;
+    setPos(null);
+    setContent(null);
+    setLiveDesc("");
+    setPinned(false);
+    activeKeyRef.current = null;
+  };
+
   const hide = () => {
     fetchAbort.current.cancelled = true;
     hideTimer.current = setTimeout(() => {
       setPos(null);
       setContent(null);
       setLiveDesc("");
+      setPinned(false);
+      activeKeyRef.current = null;
     }, 80);
   };
+
+  // Tap/click support for touch devices (no hover): tapping opens the popover and
+  // keeps it open until the same item is tapped again or the user taps elsewhere.
+  const toggle = (e: React.MouseEvent, c: PopoverContent) => {
+    e.stopPropagation();
+    const key = contentKey(c);
+    if (pinned && activeKeyRef.current === key) {
+      closeNow();
+      return;
+    }
+    activeKeyRef.current = key;
+    setPinned(true);
+    show(e, c);
+  };
+
+  useEffect(() => {
+    if (!pinned) return;
+    const onDocPointerDown = (event: Event) => {
+      const target = event.target as HTMLElement;
+      if (target.closest(".popover") || target.closest("[data-popover-trigger]")) return;
+      closeNow();
+    };
+    document.addEventListener("pointerdown", onDocPointerDown);
+    return () => document.removeEventListener("pointerdown", onDocPointerDown);
+  }, [pinned]);
 
   const popoverEl =
     pos && content
@@ -155,7 +196,7 @@ function usePopover() {
         )
       : null;
 
-  return { show, move, hide, popoverEl };
+  return { show, move, hide, toggle, popoverEl };
 }
 
 // --- Move split icon (inline SVG paths approximating Physical/Special/Status) ---
@@ -195,6 +236,7 @@ function MovesTable({
   onShow,
   onMove,
   onHide,
+  onTap,
   firstColumn,
 }: {
   moves: MovesTableEntry[];
@@ -202,6 +244,7 @@ function MovesTable({
   onShow: (e: React.MouseEvent, key: string) => void;
   onMove: (e: React.MouseEvent) => void;
   onHide: () => void;
+  onTap?: (e: React.MouseEvent, key: string) => void;
   firstColumn?: MovesTableFirstColumn;
 }) {
   const showFirstColumn = firstColumn !== null;
@@ -226,9 +269,11 @@ function MovesTable({
               <tr
                 key={`${learn.move}-${learn.level}`}
                 className="move-row"
+                data-popover-trigger="true"
                 onMouseEnter={(e) => onShow(e, learn.move)}
                 onMouseMove={onMove}
                 onMouseLeave={onHide}
+                onClick={(e) => onTap?.(e, learn.move)}
               >
                 {showFirstColumn ? (
                   <td className="move-level">
@@ -548,7 +593,7 @@ function App() {
   const [movesetLoading, setMovesetLoading] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const { show: popShow, move: popMove, hide: popHide, popoverEl } = usePopover();
+  const { show: popShow, move: popMove, hide: popHide, toggle: popToggle, popoverEl } = usePopover();
 
   useEffect(() => {
     const run = async () => {
@@ -1565,9 +1610,11 @@ function App() {
                           <span
                             key={ability}
                             className="tag-button"
+                            data-popover-trigger="true"
                             onMouseEnter={(e) => info && popShow(e, { kind: "ability", info })}
                             onMouseMove={popMove}
                             onMouseLeave={popHide}
+                            onClick={(e) => info && popToggle(e, { kind: "ability", info })}
                           >
                             {info?.name ?? getDisplayToken(ability)}
                           </span>
@@ -1583,9 +1630,11 @@ function App() {
                             <span
                               key={item}
                               className="tag-button"
+                              data-popover-trigger="true"
                               onMouseEnter={(e) => info && popShow(e, { kind: "item", info })}
                               onMouseMove={popMove}
                               onMouseLeave={popHide}
+                              onClick={(e) => info && popToggle(e, { kind: "item", info })}
                             >
                               {info?.name ?? getDisplayToken(item)}
                             </span>
@@ -1697,9 +1746,11 @@ function App() {
                                     return (
                                       <span
                                         className="tag-button"
+                                        data-popover-trigger="true"
                                         onMouseEnter={(e) => info && popShow(e, { kind: "ability", info })}
                                         onMouseMove={popMove}
                                         onMouseLeave={popHide}
+                                        onClick={(e) => info && popToggle(e, { kind: "ability", info })}
                                       >
                                         {info?.name ?? getDisplayToken(profile.ability)}
                                       </span>
@@ -1717,9 +1768,11 @@ function App() {
                                     return (
                                       <span
                                         className="tag-button"
+                                        data-popover-trigger="true"
                                         onMouseEnter={(e) => info && popShow(e, { kind: "item", info })}
                                         onMouseMove={popMove}
                                         onMouseLeave={popHide}
+                                        onClick={(e) => info && popToggle(e, { kind: "item", info })}
                                       >
                                         {info?.name ?? getDisplayToken(profile.item)}
                                       </span>
@@ -1791,9 +1844,11 @@ function App() {
                                   <span
                                     key={`${profile.id}-${moveKey}`}
                                     className="tag-button"
+                                    data-popover-trigger="true"
                                     onMouseEnter={(e) => info && popShow(e, { kind: "move", info })}
                                     onMouseMove={popMove}
                                     onMouseLeave={popHide}
+                                    onClick={(e) => info && popToggle(e, { kind: "move", info })}
                                   >
                                     {info?.name ?? getDisplayToken(moveKey)}
                                   </span>
@@ -1926,6 +1981,7 @@ function App() {
                       onShow={(e, key) => { const info = dataset?.moves[key]; if (info) popShow(e, { kind: "move", info }); }}
                       onMove={popMove}
                       onHide={popHide}
+                      onTap={(e, key) => { const info = dataset?.moves[key]; if (info) popToggle(e, { kind: "move", info }); }}
                     />
                   ) : (
                     <p className="muted">No level-up moves listed.</p>
@@ -1948,6 +2004,7 @@ function App() {
                       onShow={(e, key) => { const info = dataset?.moves[key]; if (info) popShow(e, { kind: "move", info }); }}
                       onMove={popMove}
                       onHide={popHide}
+                      onTap={(e, key) => { const info = dataset?.moves[key]; if (info) popToggle(e, { kind: "move", info }); }}
                       firstColumn={{
                         header: "TM/HM",
                         render: (entry) => tmhmNumberByMoveKey.get(entry.learn.move) ?? "—",
@@ -1974,6 +2031,7 @@ function App() {
                       onShow={(e, key) => { const info = dataset?.moves[key]; if (info) popShow(e, { kind: "move", info }); }}
                       onMove={popMove}
                       onHide={popHide}
+                      onTap={(e, key) => { const info = dataset?.moves[key]; if (info) popToggle(e, { kind: "move", info }); }}
                       firstColumn={null}
                     />
                   ) : (
@@ -1995,6 +2053,7 @@ function App() {
                       onShow={(e, key) => { const info = dataset?.moves[key]; if (info) popShow(e, { kind: "move", info }); }}
                       onMove={popMove}
                       onHide={popHide}
+                      onTap={(e, key) => { const info = dataset?.moves[key]; if (info) popToggle(e, { kind: "move", info }); }}
                       firstColumn={null}
                     />
                   ) : (
@@ -2318,6 +2377,7 @@ function App() {
                   min={1}
                   max={100}
                   value={caughtModalLevel}
+                  onFocus={(event) => event.target.select()}
                   onChange={(event) => {
                     const value = Number.parseInt(event.target.value, 10);
                     setCaughtModalLevel(Number.isNaN(value) ? 1 : Math.max(1, Math.min(100, value)));
