@@ -17,6 +17,7 @@ import {
   saveCaughtPokemonMap,
 } from "./storage";
 import { getDisplayToken, getUnboundDataset } from "./unboundData";
+import { useCloudSync } from "./useCloudSync";
 import { getTypeColor, getTypeTextColor } from "./typeColors";
 import { calculateCaughtPokemonStats, getNatureModifiers } from "./statCalculator";
 import type {
@@ -594,6 +595,14 @@ function App() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { show: popShow, move: popMove, hide: popHide, toggle: popToggle, popoverEl } = usePopover();
+  const cloudSync = useCloudSync({
+    caughtPokemonMap,
+    buildMap,
+    setCaughtPokemonMap,
+    setBuildMap,
+  });
+  const [accountMenuOpen, setAccountMenuOpen] = useState(false);
+  const [accountEmail, setAccountEmail] = useState("");
 
   useEffect(() => {
     const run = async () => {
@@ -1347,8 +1356,72 @@ function App() {
       {popoverEl}
       <section className="card">
         <header className="header">
-          <h1>Pokemon Unbound Tracker</h1>
-          <p className="subtitle">Simple Pokedex companion with cached Unbound data.</p>
+          <div className="header-top-row">
+            <div>
+              <h1>Pokemon Unbound Tracker</h1>
+              <p className="subtitle">Simple Pokedex companion with cached Unbound data.</p>
+            </div>
+            {cloudSync.isCloudEnabled && (
+              <div className="account-widget">
+                {cloudSync.user ? (
+                  <div className="account-signed-in">
+                    <span className="account-email" title={cloudSync.user.email ?? ""}>
+                      {cloudSync.user.email}
+                    </span>
+                    <span className={`sync-status sync-status-${cloudSync.syncStatus}`}>
+                      {cloudSync.syncStatus === "syncing" ? "Syncing…" : "Synced"}
+                    </span>
+                    <button type="button" className="account-btn" onClick={() => void cloudSync.signOut()}>
+                      Sign out
+                    </button>
+                  </div>
+                ) : (
+                  <div className="account-signed-out">
+                    <button
+                      type="button"
+                      className="account-btn account-btn-primary"
+                      onClick={() => setAccountMenuOpen((current) => !current)}
+                    >
+                      Sign in to sync
+                    </button>
+                    {accountMenuOpen && (
+                      <div className="account-popover">
+                        {cloudSync.magicLinkSent ? (
+                          <p className="account-hint">
+                            Check <strong>{accountEmail}</strong> for a magic sign-in link.
+                          </p>
+                        ) : (
+                          <form
+                            onSubmit={(event) => {
+                              event.preventDefault();
+                              if (accountEmail.trim()) {
+                                void cloudSync.signInWithEmail(accountEmail.trim());
+                              }
+                            }}
+                          >
+                            <label className="account-email-label">
+                              Email
+                              <input
+                                type="email"
+                                required
+                                value={accountEmail}
+                                onChange={(event) => setAccountEmail(event.target.value)}
+                                placeholder="you@example.com"
+                              />
+                            </label>
+                            <button type="submit" className="account-btn account-btn-primary">
+                              Send magic link
+                            </button>
+                          </form>
+                        )}
+                        {cloudSync.authError && <p className="account-error">{cloudSync.authError}</p>}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
         </header>
 
         {!selectedSpecies && (
