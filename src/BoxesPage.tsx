@@ -143,15 +143,21 @@ export default function BoxesPage() {
     [caughtPokemonMap],
   );
 
+  // Owned Pokémon that aren't currently placed in any box or party slot (e.g. "removed" from a
+  // slot without being released) — surfaced so they can be re-assigned or fully released.
+  const unassignedProfiles = useMemo(
+    () => allProfiles.filter((profile) => !assignedProfileIds.has(profile.id)),
+    [allProfiles, assignedProfileIds],
+  );
+
   const availableProfiles = useMemo(() => {
-    const unassigned = allProfiles.filter((profile) => !assignedProfileIds.has(profile.id));
     const query = pickerSearch.trim().toLowerCase();
     if (!query) {
-      return unassigned;
+      return unassignedProfiles;
     }
-    return unassigned.filter((profile) => displayNameFor(profile.currentSpecies).toLowerCase().includes(query));
+    return unassignedProfiles.filter((profile) => displayNameFor(profile.currentSpecies).toLowerCase().includes(query));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [allProfiles, assignedProfileIds, pickerSearch, entries]);
+  }, [unassignedProfiles, pickerSearch, entries]);
 
   // Species marked as caught (pokeball toggle) that can be newly added as an owned Pokémon.
   const caughtSpeciesOptions = useMemo(() => {
@@ -219,6 +225,30 @@ export default function BoxesPage() {
 
   const clearSlot = (location: SlotLocation) => {
     setSlotProfileId(location, null);
+    setActionLocation(null);
+  };
+
+  // Fully releases the owned Pokémon: removes it from whichever slot holds it (if any) and
+  // deletes its profile entirely (so any earlier evolution stages only marked "caught" via this
+  // profile's startingSpecies stop being auto-marked too).
+  const releaseProfileById = (profileId: string) => {
+    if (!window.confirm("Release this Pokémon? This permanently deletes its recorded stats.")) {
+      return;
+    }
+    setBoxesData((current) =>
+      current.map((box) => ({ ...box, slots: box.slots.map((slot) => (slot === profileId ? null : slot)) })),
+    );
+    setPartyData((current) => current.map((slot) => (slot === profileId ? null : slot)));
+    setCaughtPokemonMap((current) => {
+      const next: CaughtPokemonMap = {};
+      for (const [species, profiles] of Object.entries(current)) {
+        const filtered = profiles.filter((profile) => profile.id !== profileId);
+        if (filtered.length > 0) {
+          next[species] = filtered;
+        }
+      }
+      return next;
+    });
     setActionLocation(null);
   };
 
@@ -319,13 +349,35 @@ export default function BoxesPage() {
 
         <section className="party-section">
           <h2 className="party-title">Party</h2>
-          <p className="muted party-subtitle">The 6 Pokémon you carry with you (not stored in a box).</p>
           <div className="party-grid">
             {Array.from({ length: PARTY_SLOT_COUNT }, (_, slotIndex) =>
               renderSlot({ kind: "party", slotIndex }, `party-${slotIndex}`, "circle"),
             )}
           </div>
         </section>
+
+        {unassignedProfiles.length > 0 ? (
+          <section className="unassigned-section">
+            <h2 className="party-title">Unassigned Owned Pokémon</h2>
+            <p className="muted">Not currently placed in a box or party slot.</p>
+            <div className="unassigned-list">
+              {unassignedProfiles.map((profile) => {
+                const spriteUrl = dataset?.pokemon[profile.currentSpecies]?.spriteUrl ?? "";
+                const displayName = displayNameFor(profile.currentSpecies);
+                return (
+                  <div key={profile.id} className="unassigned-item">
+                    <SpriteImage speciesKey={profile.currentSpecies} fallbackUrl={spriteUrl} alt={displayName} className="box-sprite" />
+                    <span className="box-picker-item-name">{displayName}</span>
+                    <span className="box-picker-item-level">Lv. {profile.level}</span>
+                    <button type="button" className="status-pill btn-danger" onClick={() => releaseProfileById(profile.id)}>
+                      Release
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          </section>
+        ) : null}
 
         <section className="boxes-list">
           {boxesData.map((box, boxIndex) => {
@@ -475,6 +527,13 @@ export default function BoxesPage() {
                 onClick={() => clearSlot(actionLocation)}
               >
                 Remove from {actionLocation.kind === "party" ? "Party" : "Box"}
+              </button>
+              <button
+                type="button"
+                className="account-btn box-toolbar-btn-danger"
+                onClick={() => releaseProfileById(actionProfile.id)}
+              >
+                Release
               </button>
             </div>
             <div className="modal-actions">
