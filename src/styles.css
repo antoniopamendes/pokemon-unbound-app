@@ -1403,6 +1403,9 @@ button.btn-danger:hover {
   gap: 0.15rem;
   color: #8facc0;
   padding: 0 0.2rem;
+  width: 80px;
+  flex-shrink: 0;
+  box-sizing: border-box;
 }
 
 .evo-arrow-icon {
