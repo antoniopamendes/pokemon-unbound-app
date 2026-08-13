@@ -4,7 +4,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { SpriteImage, usePopover } from "./App";
 import { CaughtProfileModal } from "./CaughtProfileModal";
 import { fetchUnboundPokedex } from "./pokedex";
-import { NATURE_BY_NAME, formatNatureLabel } from "./pokemonBuild";
+import { BUILD_STATS, NATURE_BY_NAME, formatNatureLabel, sumSpread } from "./pokemonBuild";
 import { calculateCaughtPokemonStats, getNatureModifiers } from "./statCalculator";
 import {
   BOX_COLUMNS,
@@ -805,20 +805,35 @@ export default function BoxesPage() {
 
             <h4 className="pokemon-info-subheading">Stats</h4>
             {actionProfileStats ? (
-              <div className="stats-grid">
-                {([
-                  ["HP", actionProfileStats.hp], ["Atk", actionProfileStats.attack], ["Def", actionProfileStats.defense],
-                  ["SpA", actionProfileStats.spAttack], ["SpD", actionProfileStats.spDefense], ["Spe", actionProfileStats.speed],
-                  ["Total", actionProfileStats.total],
-                ] as const).map(([label, value]) => (
-                  <div key={label} className="stat-row">
-                    <span className="stat-label">{label}</span>
-                    <span className="stat-bar-wrap">
-                      <span className="stat-bar" style={{ width: `${Math.min(100, Math.round((value / 255) * 100))}%` }} />
-                    </span>
-                    <span className="stat-value">{value}</span>
-                  </div>
-                ))}
+              <div className="stat-config-table-wrap">
+                <table className="stat-config-table">
+                  <thead>
+                    <tr>
+                      <th>Stat</th>
+                      <th>EV</th>
+                      <th>IV</th>
+                      <th>Value</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {BUILD_STATS.map((stat) => (
+                      <tr key={stat.key}>
+                        <td className="stat-config-label">{stat.label}</td>
+                        <td className="stat-config-base">{actionProfile.evs[stat.key]}</td>
+                        <td className="stat-config-base">{actionProfile.ivs[stat.key]}</td>
+                        <td className="stat-config-value">{actionProfileStats[stat.key]}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                  <tfoot>
+                    <tr>
+                      <td>Total</td>
+                      <td className="stat-config-base">{sumSpread(actionProfile.evs)}/510</td>
+                      <td className="stat-config-base">{sumSpread(actionProfile.ivs)}</td>
+                      <td className="stat-config-value">{actionProfileStats.total}</td>
+                    </tr>
+                  </tfoot>
+                </table>
               </div>
             ) : null}
 

@@ -258,74 +258,63 @@ export function CaughtProfileModal({ dataset, entries, originalSpecies, initialP
           </label>
         </div>
 
-        <div className="build-spreads">
-          <div>
-            <h4>EVs</h4>
-            <div className="build-spread-grid">
-              {BUILD_STATS.map((stat) => (
-                <label key={`ev-${stat.key}`} className="build-field">
-                  {stat.label}
-                  <input
-                    type="number"
-                    min={0}
-                    max={252}
-                    value={evs[stat.key]}
-                    onChange={(event) => updateSpreadValue(setEvs, stat.key, event.target.value, 252)}
-                  />
-                </label>
-              ))}
-            </div>
-            <p className={sumSpread(evs) > 510 ? "error-text" : "muted"}>
-              Total EVs: {sumSpread(evs)}/510
-            </p>
-          </div>
-
-          <div>
-            <h4>IVs</h4>
-            <div className="build-spread-grid">
-              {BUILD_STATS.map((stat) => (
-                <label key={`iv-${stat.key}`} className="build-field">
-                  {stat.label}
-                  <input
-                    type="number"
-                    min={0}
-                    max={31}
-                    value={ivs[stat.key]}
-                    onChange={(event) => updateSpreadValue(setIvs, stat.key, event.target.value, 31)}
-                  />
-                </label>
-              ))}
-            </div>
+        <div>
+          <h4>Stats</h4>
+          <div className="stat-config-table-wrap">
+            <table className="stat-config-table">
+              <thead>
+                <tr>
+                  <th>Stat</th>
+                  <th>Base</th>
+                  <th>EV</th>
+                  <th>IV</th>
+                  <th>Value</th>
+                </tr>
+              </thead>
+              <tbody>
+                {BUILD_STATS.map((stat) => {
+                  const value = calculatedStats?.[stat.key];
+                  return (
+                    <tr key={stat.key}>
+                      <td className="stat-config-label">{stat.label}</td>
+                      <td className="stat-config-base">{details?.stats[stat.key] ?? "—"}</td>
+                      <td>
+                        <input
+                          type="number"
+                          min={0}
+                          max={252}
+                          value={evs[stat.key]}
+                          onFocus={(event) => event.target.select()}
+                          onChange={(event) => updateSpreadValue(setEvs, stat.key, event.target.value, 252)}
+                        />
+                      </td>
+                      <td>
+                        <input
+                          type="number"
+                          min={0}
+                          max={31}
+                          value={ivs[stat.key]}
+                          onFocus={(event) => event.target.select()}
+                          onChange={(event) => updateSpreadValue(setIvs, stat.key, event.target.value, 31)}
+                        />
+                      </td>
+                      <td className="stat-config-value">{value ?? "—"}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+              <tfoot>
+                <tr>
+                  <td>Total</td>
+                  <td className="stat-config-base">{details ? details.stats.total : "—"}</td>
+                  <td className={sumSpread(evs) > 510 ? "error-text" : ""}>{sumSpread(evs)}/510</td>
+                  <td>{sumSpread(ivs)}</td>
+                  <td className="stat-config-value">{calculatedStats?.total ?? "—"}</td>
+                </tr>
+              </tfoot>
+            </table>
           </div>
         </div>
-
-        {calculatedStats ? (
-          <div>
-            <h4>Calculated Stats</h4>
-            <div className="stats-grid">
-              {[
-                ["HP", calculatedStats.hp],
-                ["Atk", calculatedStats.attack],
-                ["Def", calculatedStats.defense],
-                ["SpA", calculatedStats.spAttack],
-                ["SpD", calculatedStats.spDefense],
-                ["Spe", calculatedStats.speed],
-                ["Total", calculatedStats.total],
-              ].map(([label, value]) => (
-                <div key={label} className="stat-row">
-                  <span className="stat-label">{label}</span>
-                  <span className="stat-bar-wrap">
-                    <span
-                      className="stat-bar"
-                      style={{ width: `${Math.min(100, Math.round((Number(value) / 255) * 100))}%` }}
-                    />
-                  </span>
-                  <span className="stat-value">{value}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        ) : null}
 
         <div>
           <h4>Moveset</h4>

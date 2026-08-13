@@ -1074,6 +1074,74 @@ button.btn-danger:hover {
   gap: 0.5rem;
 }
 
+.stat-config-table-wrap {
+  overflow-x: auto;
+  margin-top: 0.4rem;
+}
+
+.stat-config-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+
+.stat-config-table th {
+  text-align: left;
+  padding: 0.3rem 0.4rem;
+  border-bottom: 2px solid #d9e4ee;
+  color: #5f798f;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.stat-config-table td {
+  padding: 0.3rem 0.4rem;
+  border-bottom: 1px solid #eef3f8;
+  vertical-align: middle;
+}
+
+.stat-config-table tfoot td {
+  border-top: 2px solid #d9e4ee;
+  border-bottom: none;
+  font-weight: 700;
+  color: #1f3a4d;
+}
+
+.stat-config-label {
+  font-weight: 600;
+  color: #1f3a4d;
+  white-space: nowrap;
+}
+
+.stat-config-base,
+.stat-config-value {
+  text-align: center;
+  color: #4b6479;
+  font-variant-numeric: tabular-nums;
+}
+
+.stat-config-value {
+  font-weight: 700;
+  color: #1f3a4d;
+}
+
+.stat-config-table input[type="number"] {
+  width: 4.2rem;
+  text-align: center;
+  padding: 0.25rem 0.3rem;
+}
+
+@media (max-width: 480px) {
+  .stat-config-table {
+    font-size: 0.78rem;
+  }
+
+  .stat-config-table input[type="number"] {
+    width: 3.4rem;
+  }
+}
+
+
 .caught-fields-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
