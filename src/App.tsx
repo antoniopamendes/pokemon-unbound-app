@@ -2151,8 +2151,7 @@ function App() {
                           }}
                           aria-pressed={isCaught}
                         >
-                          {isCaught ? "Caught" : "Catch"}
-                          {isCaught ? <span className="caught-count-badge">{caughtCountForSpecies}</span> : null}
+                          Catch
                         </button>
                       </div>
                     </div>
@@ -2162,7 +2161,10 @@ function App() {
                       alt={entry.displayName}
                       className="card-sprite"
                     />
-                    <span className="pokemon-name">{entry.displayName}</span>
+                    <span className="pokemon-name-row">
+                      <span className="pokemon-name">{entry.displayName}</span>
+                      {isCaught ? <span className="caught-count-badge">{caughtCountForSpecies}</span> : null}
+                    </span>
                     <div className="pokemon-row-types">
                       {cardTypes.map((type) => (
                         <span

@@ -157,6 +157,13 @@ button.btn-danger:hover {
   font-weight: 600;
 }
 
+.pokemon-name-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+}
+
 .pokemon-main {
   flex: 1;
   min-width: 0;
@@ -263,13 +270,9 @@ button.btn-danger:hover {
 
 .catch-btn-group .status-pill {
   margin-left: 0;
-  position: relative;
 }
 
 .caught-count-badge {
-  position: absolute;
-  top: -0.5rem;
-  right: -0.5rem;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -282,7 +285,6 @@ button.btn-danger:hover {
   font-size: 0.65rem;
   font-weight: 700;
   line-height: 1;
-  box-shadow: 0 0 0 2px #ffffff;
 }
 
 .card-sprite {
@@ -1430,6 +1432,14 @@ input[type="number"]::-webkit-inner-spin-button {
 
   .header h1 {
     font-size: 1.5rem;
+  }
+
+  .header-pill-row {
+    flex-wrap: wrap;
+  }
+
+  .header-pill-row .header-pill-group-label {
+    flex-basis: 100%;
   }
 
   .pokedex-grid {
