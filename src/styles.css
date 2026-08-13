@@ -2007,8 +2007,8 @@ input[type="number"]::-webkit-inner-spin-button {
 .party-grid {
   display: grid;
   grid-template-columns: repeat(6, 1fr);
-  gap: 0.85rem;
-  max-width: 620px;
+  gap: 1.1rem;
+  max-width: 100%;
 }
 
 .boxes-list {
@@ -2144,11 +2144,23 @@ input[type="number"]::-webkit-inner-spin-button {
 }
 
 .team-roster-moves {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.35rem;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.4rem;
   margin-top: 0.55rem;
+  width: 100%;
 }
+
+.team-roster-moves .tag-button {
+  border-radius: 6px;
+  text-align: center;
+  padding: 0.45rem 0.3rem;
+  aspect-ratio: 2 / 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 
 .team-totals-card {
   border: 1px dashed #d9e4ee;
@@ -2320,6 +2332,11 @@ input[type="number"]::-webkit-inner-spin-button {
   image-rendering: pixelated;
 }
 
+.party-grid .box-sprite {
+  max-width: 72px;
+  max-height: 72px;
+}
+
 .box-picker-modal {
   max-width: 420px;
 }
@@ -2397,7 +2414,7 @@ input[type="number"]::-webkit-inner-spin-button {
   }
 
   .party-grid {
-    max-width: none;
+    gap: 0.7rem;
   }
 
   .box-grid {
@@ -2408,6 +2425,15 @@ input[type="number"]::-webkit-inner-spin-button {
   .box-sprite {
     width: 32px;
     height: 32px;
+  }
+
+  .party-grid .box-sprite {
+    max-width: 52px;
+    max-height: 52px;
+  }
+
+  .team-roster-moves {
+    grid-template-columns: 1fr;
   }
 }
 
