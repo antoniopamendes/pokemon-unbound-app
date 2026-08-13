@@ -4,7 +4,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { SpriteImage } from "./App";
 import { CaughtProfileModal } from "./CaughtProfileModal";
 import { fetchUnboundPokedex } from "./pokedex";
-import { NATURE_BY_NAME } from "./pokemonBuild";
+import { NATURE_BY_NAME, formatNatureLabel } from "./pokemonBuild";
 import { calculateCaughtPokemonStats, getNatureModifiers } from "./statCalculator";
 import {
   BOX_COLUMNS,
@@ -390,6 +390,16 @@ export default function BoxesPage() {
   }
 
   const actionProfile = actionLocation ? findProfileById(caughtPokemonMap, getSlotProfileId(actionLocation) ?? "") : null;
+  const actionProfileDetails = actionProfile ? dataset?.pokemon[actionProfile.currentSpecies] ?? null : null;
+  const actionProfileStats = actionProfile && actionProfileDetails
+    ? calculateCaughtPokemonStats(
+        actionProfileDetails.stats,
+        actionProfile.level,
+        actionProfile.ivs,
+        actionProfile.evs,
+        getNatureModifiers(NATURE_BY_NAME.get(actionProfile.nature)?.up ?? null, NATURE_BY_NAME.get(actionProfile.nature)?.down ?? null),
+      )
+    : null;
 
   const renderSlot = (location: SlotLocation, key: string, shape: "square" | "circle") => {
     const profileId = getSlotProfileId(location);
@@ -439,7 +449,6 @@ export default function BoxesPage() {
         {...commonDragProps}
       >
         <SpriteImage speciesKey={profile.currentSpecies} fallbackUrl={spriteUrl} alt={displayName} className="box-sprite" />
-        <span className="box-slot-level">Lv{profile.level}</span>
       </button>
     );
   };
@@ -523,14 +532,34 @@ export default function BoxesPage() {
 
             <div className="team-totals-card">
               <h3>Team Stat Totals</h3>
-              <div className="team-roster-stats">
-                {([
-                  ["HP", teamStatTotals.hp], ["Atk", teamStatTotals.attack], ["Def", teamStatTotals.defense],
-                  ["SpA", teamStatTotals.spAttack], ["SpD", teamStatTotals.spDefense], ["Spe", teamStatTotals.speed],
-                  ["Grand Total", teamStatTotals.total],
-                ] as const).map(([label, value]) => (
-                  <span key={label} className="team-roster-stat">{label} <strong>{value}</strong></span>
-                ))}
+              <div className="stats-grid">
+                {(() => {
+                  const rows: [string, number][] = [
+                    ["HP", teamStatTotals.hp], ["Atk", teamStatTotals.attack], ["Def", teamStatTotals.defense],
+                    ["SpA", teamStatTotals.spAttack], ["SpD", teamStatTotals.spDefense], ["Spe", teamStatTotals.speed],
+                  ];
+                  const maxValue = Math.max(1, ...rows.map(([, value]) => value));
+                  return (
+                    <>
+                      {rows.map(([label, value]) => (
+                        <div key={label} className="stat-row">
+                          <span className="stat-label">{label}</span>
+                          <span className="stat-bar-wrap">
+                            <span className="stat-bar" style={{ width: `${Math.min(100, Math.round((value / maxValue) * 100))}%` }} />
+                          </span>
+                          <span className="stat-value">{value}</span>
+                        </div>
+                      ))}
+                      <div className="stat-row">
+                        <span className="stat-label">Total</span>
+                        <span className="stat-bar-wrap">
+                          <span className="stat-bar" style={{ width: "100%" }} />
+                        </span>
+                        <span className="stat-value">{teamStatTotals.total}</span>
+                      </div>
+                    </>
+                  );
+                })()}
               </div>
             </div>
 
@@ -727,9 +756,60 @@ export default function BoxesPage() {
 
       {actionLocation && actionProfile && (
         <div className="modal-backdrop" role="dialog" aria-modal="true" onClick={() => setActionLocation(null)}>
-          <section className="modal-card" onClick={(event) => event.stopPropagation()}>
-            <h3>{displayNameFor(actionProfile.currentSpecies)}</h3>
-            <p className="muted">Level {actionProfile.level}</p>
+          <section className="modal-card pokemon-info-card" onClick={(event) => event.stopPropagation()}>
+            <div className="pokemon-info-header">
+              <SpriteImage
+                speciesKey={actionProfile.currentSpecies}
+                fallbackUrl={actionProfileDetails?.spriteUrl ?? ""}
+                alt={displayNameFor(actionProfile.currentSpecies)}
+                className="pokemon-info-sprite"
+              />
+              <div>
+                <h3>{displayNameFor(actionProfile.currentSpecies)}</h3>
+                <p className="muted">Level {actionProfile.level} · {formatNatureLabel(actionProfile.nature)} Nature</p>
+                <div className="pokemon-row-types">
+                  {(actionProfileDetails?.types ?? []).map((type) => (
+                    <span key={type} className="type-chip" style={{ background: getTypeColor(type), color: getTypeTextColor(type) }}>
+                      {getDisplayToken(type)}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="header-pill-row">
+              <span className="header-pill-group-label">Ability:</span>
+              <span className="tag-button">{actionProfile.ability ? (dataset?.abilities[actionProfile.ability]?.name ?? getDisplayToken(actionProfile.ability)) : "—"}</span>
+            </div>
+            <div className="header-pill-row">
+              <span className="header-pill-group-label">Held Item:</span>
+              <span className="tag-button">{actionProfile.item ? (dataset?.items[actionProfile.item]?.name ?? getDisplayToken(actionProfile.item)) : "—"}</span>
+            </div>
+
+            {actionProfileStats ? (
+              <div className="stats-grid">
+                {([
+                  ["HP", actionProfileStats.hp], ["Atk", actionProfileStats.attack], ["Def", actionProfileStats.defense],
+                  ["SpA", actionProfileStats.spAttack], ["SpD", actionProfileStats.spDefense], ["Spe", actionProfileStats.speed],
+                  ["Total", actionProfileStats.total],
+                ] as const).map(([label, value]) => (
+                  <div key={label} className="stat-row">
+                    <span className="stat-label">{label}</span>
+                    <span className="stat-bar-wrap">
+                      <span className="stat-bar" style={{ width: `${Math.min(100, Math.round((value / 255) * 100))}%` }} />
+                    </span>
+                    <span className="stat-value">{value}</span>
+                  </div>
+                ))}
+              </div>
+            ) : null}
+
+            <div className="team-roster-moves">
+              {actionProfile.moveset.map((moveKey) => (
+                <span key={moveKey} className="tag-button">{dataset?.moves[moveKey]?.name ?? getDisplayToken(moveKey)}</span>
+              ))}
+            </div>
+
             <div className="box-action-buttons">
               <button
                 type="button"
