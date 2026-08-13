@@ -7,11 +7,17 @@ create table if not exists public.user_data (
   caught_pokemon_map jsonb not null default '{}'::jsonb,
   build_map jsonb not null default '{}'::jsonb,
   boxes_data jsonb not null default '[]'::jsonb,
+  caught_species_map jsonb not null default '{}'::jsonb,
+  party_data jsonb not null default '[]'::jsonb,
   updated_at timestamptz not null default now()
 );
 
 -- If you already created this table before Pokedex Boxes existed, run this too:
 alter table public.user_data add column if not exists boxes_data jsonb not null default '[]'::jsonb;
+
+-- If you already created this table before the pokeball "caught" toggle / Party existed, run these too:
+alter table public.user_data add column if not exists caught_species_map jsonb not null default '{}'::jsonb;
+alter table public.user_data add column if not exists party_data jsonb not null default '[]'::jsonb;
 
 
 alter table public.user_data enable row level security;

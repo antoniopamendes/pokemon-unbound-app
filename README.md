@@ -6,12 +6,15 @@ Simple web companion/tracker for a Pokemon Unbound playthrough.
 
 Detailed Unbound Pokedex tracker with:
 - Full list parsed from Unbound species source
-- Caught/missing toggle per Pokemon
+- Pokeball toggle per Pokemon marking it as caught (drives dex completion progress)
 - Progress counter
 - local progress persistence
 - Search and caught-only filter
 - Per-Pokemon details: base stats, level-up and egg moves, catch locations, abilities, held items, evolutions
-- Pokedex Boxes: PC-style storage (6x5 grid per box) for organizing your caught Pokemon
+- Pokedex Boxes: PC-style storage (6x5 grid per box, 6 boxes shown by default) plus a 6-slot circular Party
+  for the Pokémon you carry with you. Only caught Pokémon can be added; adding one to a box/party slot is
+  where you record its actual stats (level, nature, EVs/IVs, moveset) — this is the "owned" Pokémon, separate
+  from the simple caught/not-caught toggle.
 - Move/ability/item detail inspector
 - Persistent local cache for fetched Unbound data and sprite images
 

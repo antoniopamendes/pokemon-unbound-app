@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Session, User } from "@supabase/supabase-js";
 import { isSupabaseConfigured, supabase } from "./supabaseClient";
-import type { BoxesData, BuildMap, CaughtPokemonMap } from "./types";
+import type { BoxesData, BuildMap, CaughtPokemonMap, CaughtSpeciesMap, PartyData } from "./types";
 
 export type CloudSyncStatus = "idle" | "syncing" | "synced" | "error";
 
@@ -15,6 +15,14 @@ function isBuildMapEmpty(map: BuildMap | undefined): boolean {
 
 function isBoxesDataEmpty(boxes: BoxesData | undefined): boolean {
   return !boxes || boxes.every((box) => box.slots.every((slot) => slot === null));
+}
+
+function isCaughtSpeciesMapEmpty(map: CaughtSpeciesMap | undefined): boolean {
+  return !map || Object.keys(map).length === 0;
+}
+
+function isPartyDataEmpty(party: PartyData | undefined): boolean {
+  return !party || party.every((slot) => slot === null);
 }
 
 /**
@@ -34,8 +42,18 @@ export function useCloudSync(params: {
   setBuildMap?: (value: BuildMap) => void;
   boxesData?: BoxesData;
   setBoxesData?: (value: BoxesData) => void;
+  caughtSpeciesMap?: CaughtSpeciesMap;
+  setCaughtSpeciesMap?: (value: CaughtSpeciesMap) => void;
+  partyData?: PartyData;
+  setPartyData?: (value: PartyData) => void;
 }) {
-  const { caughtPokemonMap, setCaughtPokemonMap, buildMap, setBuildMap, boxesData, setBoxesData } = params;
+  const {
+    caughtPokemonMap, setCaughtPokemonMap,
+    buildMap, setBuildMap,
+    boxesData, setBoxesData,
+    caughtSpeciesMap, setCaughtSpeciesMap,
+    partyData, setPartyData,
+  } = params;
   const [session, setSession] = useState<Session | null>(null);
   const [authLoading, setAuthLoading] = useState(isSupabaseConfigured);
   const [magicLinkSent, setMagicLinkSent] = useState(false);
@@ -44,8 +62,8 @@ export function useCloudSync(params: {
   const suppressPushRef = useRef(false);
   const hasPulledRef = useRef(false);
   const pushTimerRef = useRef<number | null>(null);
-  const latestLocalRef = useRef({ caughtPokemonMap, buildMap, boxesData });
-  latestLocalRef.current = { caughtPokemonMap, buildMap, boxesData };
+  const latestLocalRef = useRef({ caughtPokemonMap, buildMap, boxesData, caughtSpeciesMap, partyData });
+  latestLocalRef.current = { caughtPokemonMap, buildMap, boxesData, caughtSpeciesMap, partyData };
 
   const user: User | null = session?.user ?? null;
 
@@ -79,7 +97,7 @@ export function useCloudSync(params: {
     const run = async () => {
       const { data, error } = await client
         .from("user_data")
-        .select("caught_pokemon_map, build_map, boxes_data")
+        .select("caught_pokemon_map, build_map, boxes_data, caught_species_map, party_data")
         .eq("user_id", user.id)
         .maybeSingle();
 
@@ -93,6 +111,8 @@ export function useCloudSync(params: {
       const remoteCaught = (data?.caught_pokemon_map as CaughtPokemonMap | undefined) ?? {};
       const remoteBuild = (data?.build_map as BuildMap | undefined) ?? {};
       const remoteBoxes = (data?.boxes_data as BoxesData | undefined) ?? [];
+      const remoteCaughtSpecies = (data?.caught_species_map as CaughtSpeciesMap | undefined) ?? {};
+      const remoteParty = (data?.party_data as PartyData | undefined) ?? [];
 
       // If the remote column looks empty but we already have local data for it, this row was
       // likely created by another page that doesn't own this column — keep local data instead
@@ -113,6 +133,18 @@ export function useCloudSync(params: {
         const keepLocal = isBoxesDataEmpty(remoteBoxes) && !isBoxesDataEmpty(latestLocalRef.current.boxesData);
         if (!keepLocal && remoteBoxes.length > 0) {
           setBoxesData(remoteBoxes);
+        }
+      }
+      if (setCaughtSpeciesMap) {
+        const keepLocal = isCaughtSpeciesMapEmpty(remoteCaughtSpecies) && !isCaughtSpeciesMapEmpty(latestLocalRef.current.caughtSpeciesMap);
+        if (!keepLocal) {
+          setCaughtSpeciesMap(remoteCaughtSpecies);
+        }
+      }
+      if (setPartyData) {
+        const keepLocal = isPartyDataEmpty(remoteParty) && !isPartyDataEmpty(latestLocalRef.current.partyData);
+        if (!keepLocal && remoteParty.length > 0) {
+          setPartyData(remoteParty);
         }
       }
 
@@ -150,6 +182,12 @@ export function useCloudSync(params: {
       if (setBoxesData) {
         payload.boxes_data = boxesData ?? [];
       }
+      if (setCaughtSpeciesMap) {
+        payload.caught_species_map = caughtSpeciesMap ?? {};
+      }
+      if (setPartyData) {
+        payload.party_data = partyData ?? [];
+      }
       void client
         .from("user_data")
         .upsert(payload)
@@ -166,7 +204,7 @@ export function useCloudSync(params: {
       }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [caughtPokemonMap, buildMap, boxesData, user]);
+  }, [caughtPokemonMap, buildMap, boxesData, caughtSpeciesMap, partyData, user]);
 
   const signInWithEmail = useCallback(async (email: string) => {
     if (!supabase) {

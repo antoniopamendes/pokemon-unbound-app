@@ -1,14 +1,21 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { SpriteImage } from "./App";
+import { CaughtProfileModal } from "./CaughtProfileModal";
 import { fetchUnboundPokedex } from "./pokedex";
 import {
   BOX_COLUMNS,
   BOX_SLOT_COUNT,
+  PARTY_SLOT_COUNT,
   createNewBox,
   loadBoxesData,
   loadCaughtPokemonMap,
+  loadCaughtSpeciesMap,
+  loadPartyData,
   saveBoxesData,
+  saveCaughtPokemonMap,
+  saveCaughtSpeciesMap,
+  savePartyData,
 } from "./storage";
 import { getDisplayToken, getUnboundDataset } from "./unboundData";
 import { useCloudSync } from "./useCloudSync";
@@ -16,6 +23,8 @@ import type {
   BoxesData,
   CaughtPokemonMap,
   CaughtPokemonProfile,
+  CaughtSpeciesMap,
+  PartyData,
   PokemonEntry,
   UnboundDataset,
 } from "./types";
@@ -34,22 +43,36 @@ function findProfileById(
   return null;
 }
 
+/** Where a slot lives: a specific box+index, or the party (carried Pokémon). */
+type SlotLocation = { kind: "box"; boxIndex: number; slotIndex: number } | { kind: "party"; slotIndex: number };
+
 export default function BoxesPage() {
   const navigate = useNavigate();
   const [entries, setEntries] = useState<PokemonEntry[]>([]);
   const [dataset, setDataset] = useState<UnboundDataset | null>(null);
   const [caughtPokemonMap, setCaughtPokemonMap] = useState<CaughtPokemonMap>(() => loadCaughtPokemonMap());
+  const [caughtSpeciesMap, setCaughtSpeciesMap] = useState<CaughtSpeciesMap>(() => loadCaughtSpeciesMap());
   const [boxesData, setBoxesData] = useState<BoxesData>(() => loadBoxesData());
-  const [activeBoxIndex, setActiveBoxIndex] = useState(0);
-  const [renamingBox, setRenamingBox] = useState(false);
+  const [partyData, setPartyData] = useState<PartyData>(() => loadPartyData());
+  const [renamingBoxIndex, setRenamingBoxIndex] = useState<number | null>(null);
   const [boxNameDraft, setBoxNameDraft] = useState("");
-  const [pickerSlotIndex, setPickerSlotIndex] = useState<number | null>(null);
+  const [pickerLocation, setPickerLocation] = useState<SlotLocation | null>(null);
   const [pickerSearch, setPickerSearch] = useState("");
-  const [actionSlotIndex, setActionSlotIndex] = useState<number | null>(null);
+  const [newProfileSpecies, setNewProfileSpecies] = useState<string | null>(null);
+  const [actionLocation, setActionLocation] = useState<SlotLocation | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const cloudSync = useCloudSync({ caughtPokemonMap, setCaughtPokemonMap, boxesData, setBoxesData });
+  const cloudSync = useCloudSync({
+    caughtPokemonMap,
+    setCaughtPokemonMap,
+    boxesData,
+    setBoxesData,
+    caughtSpeciesMap,
+    setCaughtSpeciesMap,
+    partyData,
+    setPartyData,
+  });
 
   useEffect(() => {
     const run = async () => {
@@ -85,20 +108,35 @@ export default function BoxesPage() {
     saveBoxesData(boxesData);
   }, [boxesData]);
 
-  const displayNameFor = (speciesId: string) => getDisplayToken(speciesId.replace("SPECIES_", ""));
+  useEffect(() => {
+    savePartyData(partyData);
+  }, [partyData]);
 
-  // Every profile id currently placed in any box, across all boxes.
+  useEffect(() => {
+    saveCaughtPokemonMap(caughtPokemonMap);
+  }, [caughtPokemonMap]);
+
+  useEffect(() => {
+    saveCaughtSpeciesMap(caughtSpeciesMap);
+  }, [caughtSpeciesMap]);
+
+  const displayNameFor = (speciesId: string) =>
+    entries.find((entry) => entry.id === speciesId)?.displayName
+    ?? getDisplayToken(speciesId.replace("SPECIES_", ""));
+
+  // Every profile id currently placed in any box or in the party, across the whole collection.
   const assignedProfileIds = useMemo(() => {
     const set = new Set<string>();
     for (const box of boxesData) {
       for (const slot of box.slots) {
-        if (slot) {
-          set.add(slot);
-        }
+        if (slot) set.add(slot);
       }
     }
+    for (const slot of partyData) {
+      if (slot) set.add(slot);
+    }
     return set;
-  }, [boxesData]);
+  }, [boxesData, partyData]);
 
   const allProfiles = useMemo(
     () => Object.values(caughtPokemonMap).flat(),
@@ -112,64 +150,89 @@ export default function BoxesPage() {
       return unassigned;
     }
     return unassigned.filter((profile) => displayNameFor(profile.currentSpecies).toLowerCase().includes(query));
-  }, [allProfiles, assignedProfileIds, pickerSearch]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [allProfiles, assignedProfileIds, pickerSearch, entries]);
 
-  const activeBox = boxesData[activeBoxIndex] ?? null;
+  // Species marked as caught (pokeball toggle) that can be newly added as an owned Pokémon.
+  const caughtSpeciesOptions = useMemo(() => {
+    const query = pickerSearch.trim().toLowerCase();
+    return entries
+      .filter((entry) => caughtSpeciesMap[entry.id])
+      .filter((entry) => !query || entry.displayName.toLowerCase().includes(query))
+      .sort((a, b) => a.dexOrder - b.dexOrder);
+  }, [entries, caughtSpeciesMap, pickerSearch]);
+
   const totalCaught = allProfiles.length;
   const totalBoxed = assignedProfileIds.size;
 
-  const goToPrevBox = () => setActiveBoxIndex((i) => (i - 1 + boxesData.length) % boxesData.length);
-  const goToNextBox = () => setActiveBoxIndex((i) => (i + 1) % boxesData.length);
-
-  const startRenaming = () => {
-    setBoxNameDraft(activeBox?.name ?? "");
-    setRenamingBox(true);
+  const startRenaming = (boxIndex: number) => {
+    setBoxNameDraft(boxesData[boxIndex]?.name ?? "");
+    setRenamingBoxIndex(boxIndex);
   };
 
-  const commitRename = () => {
+  const commitRename = (boxIndex: number) => {
     const trimmed = boxNameDraft.trim();
     setBoxesData((current) =>
-      current.map((box, i) => (i === activeBoxIndex ? { ...box, name: trimmed || box.name } : box)),
+      current.map((box, i) => (i === boxIndex ? { ...box, name: trimmed || box.name } : box)),
     );
-    setRenamingBox(false);
+    setRenamingBoxIndex(null);
   };
 
   const addBox = () => {
     setBoxesData((current) => [...current, createNewBox(current.length)]);
-    setActiveBoxIndex(boxesData.length);
   };
 
-  const removeEmptyActiveBox = () => {
-    if (!activeBox || boxesData.length <= 1) {
+  const removeEmptyBox = (boxIndex: number) => {
+    const box = boxesData[boxIndex];
+    if (!box || boxesData.length <= 1) {
       return;
     }
-    const isEmpty = activeBox.slots.every((slot) => slot === null);
+    const isEmpty = box.slots.every((slot) => slot === null);
     if (!isEmpty) {
       return;
     }
-    setBoxesData((current) => current.filter((_, i) => i !== activeBoxIndex));
-    setActiveBoxIndex((i) => Math.max(0, i - 1));
+    setBoxesData((current) => current.filter((_, i) => i !== boxIndex));
   };
 
-  const assignProfileToSlot = (slotIndex: number, profileId: string) => {
-    setBoxesData((current) =>
-      current.map((box, i) =>
-        i === activeBoxIndex
-          ? { ...box, slots: box.slots.map((slot, s) => (s === slotIndex ? profileId : slot)) }
-          : box,
-      ),
-    );
-    setPickerSlotIndex(null);
+  const getSlotProfileId = (location: SlotLocation): string | null =>
+    location.kind === "box" ? boxesData[location.boxIndex]?.slots[location.slotIndex] ?? null : partyData[location.slotIndex] ?? null;
+
+  const setSlotProfileId = (location: SlotLocation, profileId: string | null) => {
+    if (location.kind === "box") {
+      setBoxesData((current) =>
+        current.map((box, i) =>
+          i === location.boxIndex
+            ? { ...box, slots: box.slots.map((slot, s) => (s === location.slotIndex ? profileId : slot)) }
+            : box,
+        ),
+      );
+    } else {
+      setPartyData((current) => current.map((slot, s) => (s === location.slotIndex ? profileId : slot)));
+    }
+  };
+
+  const assignProfileToSlot = (location: SlotLocation, profileId: string) => {
+    setSlotProfileId(location, profileId);
+    setPickerLocation(null);
     setPickerSearch("");
   };
 
-  const clearSlot = (slotIndex: number) => {
-    setBoxesData((current) =>
-      current.map((box, i) =>
-        i === activeBoxIndex ? { ...box, slots: box.slots.map((slot, s) => (s === slotIndex ? null : slot)) } : box,
-      ),
-    );
-    setActionSlotIndex(null);
+  const clearSlot = (location: SlotLocation) => {
+    setSlotProfileId(location, null);
+    setActionLocation(null);
+  };
+
+  const handleNewProfileSaved = (profile: CaughtPokemonProfile) => {
+    setCaughtPokemonMap((current) => ({
+      ...current,
+      [profile.currentSpecies]: [...(current[profile.currentSpecies] ?? []), profile],
+    }));
+    if (pickerLocation) {
+      setSlotProfileId(pickerLocation, profile.id);
+    }
+    setNewProfileSpecies(null);
+    setPickerLocation(null);
+    setPickerSearch("");
   };
 
   if (isLoading) {
@@ -197,10 +260,39 @@ export default function BoxesPage() {
     );
   }
 
-  const actionSlotProfile =
-    actionSlotIndex != null && activeBox?.slots[actionSlotIndex]
-      ? findProfileById(caughtPokemonMap, activeBox.slots[actionSlotIndex]!)
-      : null;
+  const actionProfile = actionLocation ? findProfileById(caughtPokemonMap, getSlotProfileId(actionLocation) ?? "") : null;
+
+  const renderSlot = (location: SlotLocation, key: string, shape: "square" | "circle") => {
+    const profileId = getSlotProfileId(location);
+    const profile = profileId ? findProfileById(caughtPokemonMap, profileId) : null;
+    const shapeClass = shape === "circle" ? "box-slot-circle" : "";
+    if (!profile) {
+      return (
+        <button
+          key={key}
+          type="button"
+          className={`box-slot box-slot-empty ${shapeClass}`}
+          onClick={() => setPickerLocation(location)}
+        >
+          <span className="box-slot-plus">+</span>
+        </button>
+      );
+    }
+    const spriteUrl = dataset?.pokemon[profile.currentSpecies]?.spriteUrl ?? "";
+    const displayName = displayNameFor(profile.currentSpecies);
+    return (
+      <button
+        key={key}
+        type="button"
+        className={`box-slot box-slot-filled ${shapeClass}`}
+        title={`${displayName} (Lv. ${profile.level})`}
+        onClick={() => setActionLocation(location)}
+      >
+        <SpriteImage speciesKey={profile.currentSpecies} fallbackUrl={spriteUrl} alt={displayName} className="box-sprite" />
+        <span className="box-slot-level">Lv{profile.level}</span>
+      </button>
+    );
+  };
 
   return (
     <main className="app-shell">
@@ -222,152 +314,171 @@ export default function BoxesPage() {
         <Link to="/" className="back-link">← Back to Pokédex</Link>
 
         <section className="progress-card">
-          <strong>Boxed: {totalBoxed}/{totalCaught} caught Pokemon</strong>
+          <strong>Boxed: {totalBoxed}/{totalCaught} owned Pokemon</strong>
         </section>
 
-        <section className="box-toolbar">
-          <button type="button" className="box-nav-btn" onClick={goToPrevBox} aria-label="Previous box">
-            ‹
-          </button>
-          {renamingBox ? (
-            <input
-              type="text"
-              className="box-name-input"
-              value={boxNameDraft}
-              autoFocus
-              onChange={(event) => setBoxNameDraft(event.target.value)}
-              onBlur={commitRename}
-              onKeyDown={(event) => {
-                if (event.key === "Enter") {
-                  commitRename();
-                } else if (event.key === "Escape") {
-                  setRenamingBox(false);
-                }
-              }}
-            />
-          ) : (
-            <button type="button" className="box-name-btn" onClick={startRenaming}>
-              {activeBox?.name ?? "Box"}
-            </button>
-          )}
-          <button type="button" className="box-nav-btn" onClick={goToNextBox} aria-label="Next box">
-            ›
-          </button>
-          <span className="box-index-label">
-            {activeBoxIndex + 1} / {boxesData.length}
-          </span>
-          <button type="button" className="box-toolbar-btn" onClick={addBox}>
-            + Add Box
-          </button>
-          {activeBox?.slots.every((slot) => slot === null) && boxesData.length > 1 && (
-            <button type="button" className="box-toolbar-btn box-toolbar-btn-danger" onClick={removeEmptyActiveBox}>
-              Remove Empty Box
-            </button>
-          )}
+        <section className="party-section">
+          <h2 className="party-title">Party</h2>
+          <p className="muted party-subtitle">The 6 Pokémon you carry with you (not stored in a box).</p>
+          <div className="party-grid">
+            {Array.from({ length: PARTY_SLOT_COUNT }, (_, slotIndex) =>
+              renderSlot({ kind: "party", slotIndex }, `party-${slotIndex}`, "circle"),
+            )}
+          </div>
         </section>
 
-        <section className="box-grid" style={{ gridTemplateColumns: `repeat(${BOX_COLUMNS}, 1fr)` }}>
-          {Array.from({ length: BOX_SLOT_COUNT }, (_, slotIndex) => {
-            const profileId = activeBox?.slots[slotIndex] ?? null;
-            const profile = profileId ? findProfileById(caughtPokemonMap, profileId) : null;
-            if (!profile) {
-              return (
-                <button
-                  key={slotIndex}
-                  type="button"
-                  className="box-slot box-slot-empty"
-                  onClick={() => setPickerSlotIndex(slotIndex)}
-                >
-                  <span className="box-slot-plus">+</span>
-                </button>
-              );
-            }
-            const spriteUrl = dataset?.pokemon[profile.currentSpecies]?.spriteUrl ?? "";
-            const displayName = displayNameFor(profile.currentSpecies);
+        <section className="boxes-list">
+          {boxesData.map((box, boxIndex) => {
+            const isEmpty = box.slots.every((slot) => slot === null);
             return (
-              <button
-                key={slotIndex}
-                type="button"
-                className="box-slot box-slot-filled"
-                title={`${displayName} (Lv. ${profile.level})`}
-                onClick={() => setActionSlotIndex(slotIndex)}
-              >
-                <SpriteImage speciesKey={profile.currentSpecies} fallbackUrl={spriteUrl} alt={displayName} className="box-sprite" />
-                <span className="box-slot-level">Lv{profile.level}</span>
-              </button>
+              <div key={boxIndex} className="box-card">
+                <div className="box-card-header">
+                  {renamingBoxIndex === boxIndex ? (
+                    <input
+                      type="text"
+                      className="box-name-input"
+                      value={boxNameDraft}
+                      autoFocus
+                      onChange={(event) => setBoxNameDraft(event.target.value)}
+                      onBlur={() => commitRename(boxIndex)}
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter") {
+                          commitRename(boxIndex);
+                        } else if (event.key === "Escape") {
+                          setRenamingBoxIndex(null);
+                        }
+                      }}
+                    />
+                  ) : (
+                    <button type="button" className="box-name-btn" onClick={() => startRenaming(boxIndex)}>
+                      {box.name}
+                    </button>
+                  )}
+                  {isEmpty && boxesData.length > 1 && (
+                    <button
+                      type="button"
+                      className="box-toolbar-btn box-toolbar-btn-danger box-remove-btn"
+                      onClick={() => removeEmptyBox(boxIndex)}
+                    >
+                      Remove
+                    </button>
+                  )}
+                </div>
+                <div className="box-grid" style={{ gridTemplateColumns: `repeat(${BOX_COLUMNS}, 1fr)` }}>
+                  {Array.from({ length: BOX_SLOT_COUNT }, (_, slotIndex) =>
+                    renderSlot({ kind: "box", boxIndex, slotIndex }, `${boxIndex}-${slotIndex}`, "square"),
+                  )}
+                </div>
+              </div>
             );
           })}
+          <button type="button" className="box-toolbar-btn box-add-box-btn" onClick={addBox}>
+            + Add Box
+          </button>
         </section>
       </section>
 
-      {pickerSlotIndex != null && (
-        <div className="modal-backdrop" role="dialog" aria-modal="true" onClick={() => setPickerSlotIndex(null)}>
+      {pickerLocation && (
+        <div className="modal-backdrop" role="dialog" aria-modal="true" onClick={() => setPickerLocation(null)}>
           <section className="modal-card box-picker-modal" onClick={(event) => event.stopPropagation()}>
-            <h3>Add Pokemon to Box</h3>
+            <h3>Add Pokemon</h3>
             <input
               type="text"
               className="box-picker-search"
-              placeholder="Search caught Pokemon..."
+              placeholder="Search Pokemon..."
               value={pickerSearch}
               onChange={(event) => setPickerSearch(event.target.value)}
               autoFocus
             />
-            <div className="box-picker-list">
-              {availableProfiles.length === 0 ? (
-                <p className="muted">
-                  {allProfiles.length === 0
-                    ? "You haven't caught any Pokemon yet."
-                    : "No unboxed caught Pokemon match your search."}
-                </p>
-              ) : (
-                availableProfiles.map((profile) => {
-                  const spriteUrl = dataset?.pokemon[profile.currentSpecies]?.spriteUrl ?? "";
-                  const displayName = displayNameFor(profile.currentSpecies);
+
+            {availableProfiles.length > 0 ? (
+              <>
+                <p className="box-picker-section-label">Assign an owned Pokémon</p>
+                <div className="box-picker-list">
+                  {availableProfiles.map((profile) => {
+                    const spriteUrl = dataset?.pokemon[profile.currentSpecies]?.spriteUrl ?? "";
+                    const displayName = displayNameFor(profile.currentSpecies);
+                    return (
+                      <button
+                        key={profile.id}
+                        type="button"
+                        className="box-picker-item"
+                        onClick={() => assignProfileToSlot(pickerLocation, profile.id)}
+                      >
+                        <SpriteImage speciesKey={profile.currentSpecies} fallbackUrl={spriteUrl} alt={displayName} className="box-sprite" />
+                        <span className="box-picker-item-name">{displayName}</span>
+                        <span className="box-picker-item-level">Lv. {profile.level}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </>
+            ) : null}
+
+            <p className="box-picker-section-label">Add a new owned Pokémon</p>
+            {caughtSpeciesOptions.length === 0 ? (
+              <p className="muted">
+                No caught Pokémon to add yet. Mark a Pokémon as caught (pokeball button) on the main Pokédex page first.
+              </p>
+            ) : (
+              <div className="box-picker-list">
+                {caughtSpeciesOptions.map((entry) => {
+                  const spriteUrl = dataset?.pokemon[entry.id]?.spriteUrl ?? "";
                   return (
                     <button
-                      key={profile.id}
+                      key={entry.id}
                       type="button"
                       className="box-picker-item"
-                      onClick={() => assignProfileToSlot(pickerSlotIndex, profile.id)}
+                      onClick={() => setNewProfileSpecies(entry.id)}
                     >
-                      <SpriteImage speciesKey={profile.currentSpecies} fallbackUrl={spriteUrl} alt={displayName} className="box-sprite" />
-                      <span className="box-picker-item-name">{displayName}</span>
-                      <span className="box-picker-item-level">Lv. {profile.level}</span>
+                      <SpriteImage speciesKey={entry.id} fallbackUrl={spriteUrl} alt={entry.displayName} className="box-sprite" />
+                      <span className="box-picker-item-name">{entry.displayName}</span>
                     </button>
                   );
-                })
-              )}
-            </div>
+                })}
+              </div>
+            )}
+
             <div className="modal-actions">
-              <button type="button" className="status-pill" onClick={() => setPickerSlotIndex(null)}>Cancel</button>
+              <button type="button" className="status-pill" onClick={() => setPickerLocation(null)}>Cancel</button>
             </div>
           </section>
         </div>
       )}
 
-      {actionSlotIndex != null && actionSlotProfile && (
-        <div className="modal-backdrop" role="dialog" aria-modal="true" onClick={() => setActionSlotIndex(null)}>
+      {newProfileSpecies && dataset ? (
+        <CaughtProfileModal
+          dataset={dataset}
+          entries={entries}
+          originalSpecies={newProfileSpecies}
+          onSave={handleNewProfileSaved}
+          onClose={() => setNewProfileSpecies(null)}
+        />
+      ) : null}
+
+      {actionLocation && actionProfile && (
+        <div className="modal-backdrop" role="dialog" aria-modal="true" onClick={() => setActionLocation(null)}>
           <section className="modal-card" onClick={(event) => event.stopPropagation()}>
-            <h3>{displayNameFor(actionSlotProfile.currentSpecies)}</h3>
-            <p className="muted">Level {actionSlotProfile.level}</p>
+            <h3>{displayNameFor(actionProfile.currentSpecies)}</h3>
+            <p className="muted">Level {actionProfile.level}</p>
             <div className="box-action-buttons">
               <button
                 type="button"
                 className="account-btn account-btn-primary"
-                onClick={() => navigate(`/pokemon/${actionSlotProfile.currentSpecies}`)}
+                onClick={() => navigate(`/pokemon/${actionProfile.currentSpecies}`)}
               >
                 View Details
               </button>
               <button
                 type="button"
                 className="account-btn box-toolbar-btn-danger"
-                onClick={() => clearSlot(actionSlotIndex)}
+                onClick={() => clearSlot(actionLocation)}
               >
-                Remove from Box
+                Remove from {actionLocation.kind === "party" ? "Party" : "Box"}
               </button>
             </div>
             <div className="modal-actions">
-              <button type="button" className="status-pill" onClick={() => setActionSlotIndex(null)}>Close</button>
+              <button type="button" className="status-pill" onClick={() => setActionLocation(null)}>Close</button>
             </div>
           </section>
         </div>

@@ -1,15 +1,17 @@
-import type { BoxesData, BuildMap, CaughtPokemonMap, PokemonBox } from "./types";
+import type { BoxesData, BuildMap, CaughtPokemonMap, CaughtSpeciesMap, PartyData, PokemonBox } from "./types";
 
 const STORAGE_KEY = "unbound-tracker-caught-v1";
 const BUILD_STORAGE_KEY = "unbound-tracker-builds-v1";
 const CAUGHT_PROFILE_STORAGE_KEY = "unbound-tracker-caught-profile-v1";
 const BOXES_STORAGE_KEY = "unbound-tracker-boxes-v1";
+const PARTY_STORAGE_KEY = "unbound-tracker-party-v1";
+export const PARTY_SLOT_COUNT = 6;
 
 // Standard Pokemon PC Box dimensions: 6 columns x 5 rows.
 export const BOX_COLUMNS = 6;
 export const BOX_ROWS = 5;
 export const BOX_SLOT_COUNT = BOX_COLUMNS * BOX_ROWS;
-const DEFAULT_BOX_COUNT = 12;
+const DEFAULT_BOX_COUNT = 6;
 
 function createEmptyBox(index: number): PokemonBox {
   return { name: `Box ${index + 1}`, slots: new Array(BOX_SLOT_COUNT).fill(null) };
@@ -20,9 +22,7 @@ function createDefaultBoxes(): BoxesData {
 }
 
 
-export type CaughtMap = Record<string, boolean>;
-
-export function loadCaughtMap(): CaughtMap {
+export function loadCaughtSpeciesMap(): CaughtSpeciesMap {
   const raw = localStorage.getItem(STORAGE_KEY);
   if (!raw) {
     return {};
@@ -41,10 +41,10 @@ export function loadCaughtMap(): CaughtMap {
     return {};
   }
 
-  return parsed as CaughtMap;
+  return parsed as CaughtSpeciesMap;
 }
 
-export function saveCaughtMap(value: CaughtMap): void {
+export function saveCaughtSpeciesMap(value: CaughtSpeciesMap): void {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(value));
 }
 
@@ -192,5 +192,35 @@ export function saveBoxesData(value: BoxesData): void {
 
 export function createNewBox(index: number): PokemonBox {
   return createEmptyBox(index);
+}
+
+export function loadPartyData(): PartyData {
+  const raw = localStorage.getItem(PARTY_STORAGE_KEY);
+  if (!raw) {
+    return new Array(PARTY_SLOT_COUNT).fill(null);
+  }
+
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(raw) as unknown;
+  } catch (error) {
+    console.warn("Party data is corrupted and will be reset.", error);
+    return new Array(PARTY_SLOT_COUNT).fill(null);
+  }
+
+  if (!Array.isArray(parsed)) {
+    console.warn("Party data format is invalid and will be reset.");
+    return new Array(PARTY_SLOT_COUNT).fill(null);
+  }
+
+  const slots = parsed.slice(0, PARTY_SLOT_COUNT).map((slot) => (typeof slot === "string" && slot.length > 0 ? slot : null));
+  while (slots.length < PARTY_SLOT_COUNT) {
+    slots.push(null);
+  }
+  return slots;
+}
+
+export function savePartyData(value: PartyData): void {
+  localStorage.setItem(PARTY_STORAGE_KEY, JSON.stringify(value));
 }
 

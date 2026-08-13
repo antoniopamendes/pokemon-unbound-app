@@ -13,18 +13,32 @@ import {
 import {
   loadBuildMap,
   loadCaughtPokemonMap,
+  loadCaughtSpeciesMap,
   saveBuildMap,
   saveCaughtPokemonMap,
+  saveCaughtSpeciesMap,
 } from "./storage";
 import { getDisplayToken, getUnboundDataset } from "./unboundData";
 import { useCloudSync } from "./useCloudSync";
 import { getTypeColor, getTypeTextColor } from "./typeColors";
 import { calculateCaughtPokemonStats, getNatureModifiers } from "./statCalculator";
+import {
+  BUILD_STATS,
+  NATURES,
+  NATURE_BY_NAME,
+  emptySpread,
+  findAncestorPath,
+  formatNatureLabel,
+  sumSpread,
+  toSlug,
+} from "./pokemonBuild";
+import { CaughtProfileModal } from "./CaughtProfileModal";
 import type {
   AbilityInfo,
   BuildMap,
   CaughtPokemonMap,
   CaughtPokemonProfile,
+  CaughtSpeciesMap,
   EvoTreeNode,
   ItemInfo,
   MoveInfo,
@@ -444,106 +458,6 @@ function collectFormNodes(root: EvoTreeNode): EvoTreeNode[] {
 // Number of Pokémon cards rendered per page; more load in as the user scrolls near the bottom.
 const GRID_PAGE_SIZE = 48;
 
-const BUILD_STATS: Array<{ key: keyof StatSpread; label: string }> = [
-  { key: "hp", label: "HP" },
-  { key: "attack", label: "Atk" },
-  { key: "defense", label: "Def" },
-  { key: "spAttack", label: "SpA" },
-  { key: "spDefense", label: "SpD" },
-  { key: "speed", label: "Spe" },
-];
-
-const STAT_LABEL: Record<keyof StatSpread, string> = {
-  hp: "HP",
-  attack: "Atk",
-  defense: "Def",
-  spAttack: "SpA",
-  spDefense: "SpD",
-  speed: "Spe",
-};
-
-type NatureOption = {
-  name: string;
-  up: keyof StatSpread | null;
-  down: keyof StatSpread | null;
-};
-
-const NATURES: NatureOption[] = [
-  { name: "Hardy", up: null, down: null },
-  { name: "Lonely", up: "attack", down: "defense" },
-  { name: "Brave", up: "attack", down: "speed" },
-  { name: "Adamant", up: "attack", down: "spAttack" },
-  { name: "Naughty", up: "attack", down: "spDefense" },
-  { name: "Bold", up: "defense", down: "attack" },
-  { name: "Docile", up: null, down: null },
-  { name: "Relaxed", up: "defense", down: "speed" },
-  { name: "Impish", up: "defense", down: "spAttack" },
-  { name: "Lax", up: "defense", down: "spDefense" },
-  { name: "Timid", up: "speed", down: "attack" },
-  { name: "Hasty", up: "speed", down: "defense" },
-  { name: "Serious", up: null, down: null },
-  { name: "Jolly", up: "speed", down: "spAttack" },
-  { name: "Naive", up: "speed", down: "spDefense" },
-  { name: "Modest", up: "spAttack", down: "attack" },
-  { name: "Mild", up: "spAttack", down: "defense" },
-  { name: "Quiet", up: "spAttack", down: "speed" },
-  { name: "Bashful", up: null, down: null },
-  { name: "Rash", up: "spAttack", down: "spDefense" },
-  { name: "Calm", up: "spDefense", down: "attack" },
-  { name: "Gentle", up: "spDefense", down: "defense" },
-  { name: "Sassy", up: "spDefense", down: "speed" },
-  { name: "Careful", up: "spDefense", down: "spAttack" },
-  { name: "Quirky", up: null, down: null },
-];
-
-const NATURE_BY_NAME = new Map(NATURES.map((nature) => [nature.name, nature] as const));
-
-function formatNatureLabel(name: string): string {
-  const nature = NATURE_BY_NAME.get(name);
-  if (!nature || !nature.up || !nature.down) {
-    return `${name} (neutral)`;
-  }
-  return `${name} (+${STAT_LABEL[nature.up]}, -${STAT_LABEL[nature.down]})`;
-}
-
-function emptySpread(defaultValue: number): StatSpread {
-  return {
-    hp: defaultValue,
-    attack: defaultValue,
-    defense: defaultValue,
-    spAttack: defaultValue,
-    spDefense: defaultValue,
-    speed: defaultValue,
-  };
-}
-
-function sumSpread(spread: StatSpread): number {
-  return BUILD_STATS.reduce((sum, stat) => sum + spread[stat.key], 0);
-}
-
-/** Returns the unique path of species from the evolution tree root down to `target` (inclusive), or just [target] if not found. */
-function findAncestorPath(root: EvoTreeNode | null, target: string): string[] {
-  if (!root) return [target];
-  const search = (node: EvoTreeNode, acc: string[]): string[] | null => {
-    const next = [...acc, node.species];
-    if (node.species === target) return next;
-    for (const child of node.children) {
-      const found = search(child, next);
-      if (found) return found;
-    }
-    return null;
-  };
-  return search(root, []) ?? [target];
-}
-
-function toSlug(value: string): string {
-  return value
-    .toLowerCase()
-    .replace(/['’]/g, "")
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "");
-}
-
 function App() {
   const [entries, setEntries] = useState<PokemonEntry[]>([]);
   const [dataset, setDataset] = useState<UnboundDataset | null>(null);
@@ -552,6 +466,9 @@ function App() {
   );
   const [buildMap, setBuildMap] = useState<BuildMap>(() =>
     loadBuildMap(),
+  );
+  const [caughtSpeciesMap, setCaughtSpeciesMap] = useState<CaughtSpeciesMap>(() =>
+    loadCaughtSpeciesMap(),
   );
   const params = useParams<{ id?: string }>();
   const navigate = useNavigate();
@@ -594,22 +511,10 @@ function App() {
   const [buildIvs, setBuildIvs] = useState<StatSpread>(() => emptySpread(31));
   const [buildMoveset, setBuildMoveset] = useState<string[]>(["", "", "", ""]);
   const [buildError, setBuildError] = useState<string>("");
-  const [caughtModalOpen, setCaughtModalOpen] = useState(false);
-  const [caughtModalOriginalSpecies, setCaughtModalOriginalSpecies] = useState<string | null>(null);
-  const [caughtModalEditingId, setCaughtModalEditingId] = useState<string | null>(null);
-  const [caughtModalCurrentSpecies, setCaughtModalCurrentSpecies] = useState<string>("");
-  const [caughtModalStartingSpecies, setCaughtModalStartingSpecies] = useState<string>("");
-  const [caughtModalLevel, setCaughtModalLevel] = useState<number>(1);
-  const [caughtModalNature, setCaughtModalNature] = useState<string>(NATURES[0].name);
-  const [caughtModalAbility, setCaughtModalAbility] = useState<string>("");
-  const [caughtModalItem, setCaughtModalItem] = useState<string>("");
-  const [caughtModalEvs, setCaughtModalEvs] = useState<StatSpread>(() => emptySpread(0));
-  const [caughtModalIvs, setCaughtModalIvs] = useState<StatSpread>(() => emptySpread(31));
-  const [caughtModalMoveset, setCaughtModalMoveset] = useState<string[]>(["", "", "", ""]);
-  const [caughtModalError, setCaughtModalError] = useState<string>("");
-  const [caughtTmhmMoveSlugs, setCaughtTmhmMoveSlugs] = useState<string[]>([]);
-  const [caughtTutorMoveSlugs, setCaughtTutorMoveSlugs] = useState<string[]>([]);
-  const [caughtMovesLoading, setCaughtMovesLoading] = useState(false);
+  // Modal for creating/editing an "owned" Pokémon profile (level/nature/EVs/moveset etc.).
+  // Creation is triggered from Pokedex Boxes; editing is triggered from the species detail page.
+  const [profileModalSpecies, setProfileModalSpecies] = useState<string | null>(null);
+  const [profileModalEditing, setProfileModalEditing] = useState<CaughtPokemonProfile | null>(null);
   const [tmhmMoveSlugs, setTmhmMoveSlugs] = useState<string[]>([]);
   const [tmhmNumbersBySlug, setTmhmNumbersBySlug] = useState<Record<string, string>>({});
   const [tutorMoveSlugs, setTutorMoveSlugs] = useState<string[]>([]);
@@ -622,6 +527,8 @@ function App() {
     buildMap,
     setCaughtPokemonMap,
     setBuildMap,
+    caughtSpeciesMap,
+    setCaughtSpeciesMap,
   });
   const [accountMenuOpen, setAccountMenuOpen] = useState(false);
   const [accountEmail, setAccountEmail] = useState("");
@@ -674,6 +581,10 @@ function App() {
   useEffect(() => {
     saveBuildMap(buildMap);
   }, [buildMap]);
+
+  useEffect(() => {
+    saveCaughtSpeciesMap(caughtSpeciesMap);
+  }, [caughtSpeciesMap]);
 
   useEffect(() => {
     if (!selectedSpecies || !dataset) {
@@ -745,35 +656,6 @@ function App() {
     setCollapsedSections(new Set());
   }, [selectedSpecies]);
 
-  useEffect(() => {
-    if (!caughtModalCurrentSpecies) {
-      setCaughtTmhmMoveSlugs([]);
-      setCaughtTutorMoveSlugs([]);
-      return;
-    }
-
-    let active = true;
-    setCaughtMovesLoading(true);
-    void fetchPokemonMoveBuckets(caughtModalCurrentSpecies)
-      .then((buckets) => {
-        if (!active) return;
-        setCaughtTmhmMoveSlugs(Array.isArray(buckets.tmhm) ? buckets.tmhm : []);
-        setCaughtTutorMoveSlugs(Array.isArray(buckets.tutor) ? buckets.tutor : []);
-      })
-      .catch(() => {
-        if (!active) return;
-        setCaughtTmhmMoveSlugs([]);
-        setCaughtTutorMoveSlugs([]);
-      })
-      .finally(() => {
-        if (active) setCaughtMovesLoading(false);
-      });
-
-    return () => {
-      active = false;
-    };
-  }, [caughtModalCurrentSpecies]);
-
   const caughtCountBySpecies = useMemo(() => {
     const counts: Record<string, number> = {};
     Object.entries(caughtPokemonMap).forEach(([speciesKey, profiles]) => {
@@ -822,7 +704,21 @@ function App() {
   }, [caughtPokemonMap, dataset]);
 
   const isSpeciesRegistered = (speciesId: string) =>
-    (caughtCountBySpecies[speciesId] ?? 0) > 0 || ancestorCaughtSpecies.has(speciesId);
+    Boolean(caughtSpeciesMap[speciesId]) ||
+    (caughtCountBySpecies[speciesId] ?? 0) > 0 ||
+    ancestorCaughtSpecies.has(speciesId);
+
+  const toggleCaughtSpecies = (speciesId: string) => {
+    setCaughtSpeciesMap((current) => {
+      const next = { ...current };
+      if (next[speciesId]) {
+        delete next[speciesId];
+      } else {
+        next[speciesId] = true;
+      }
+      return next;
+    });
+  };
 
   const availableTypeFilters = useMemo(() => {
     if (!dataset) {
@@ -905,103 +801,17 @@ function App() {
   const progressPercentage =
     totalCount === 0 ? 0 : Math.round((caughtCount / totalCount) * 100);
 
-  const openCaughtModal = (speciesKey: string) => {
-    if (!dataset) {
-      return;
-    }
-    const details = dataset.pokemon[speciesKey];
-    const defaultAbility = details?.abilities[0] || "";
-    setCaughtModalOriginalSpecies(speciesKey);
-    setCaughtModalEditingId(null);
-    setCaughtModalCurrentSpecies(speciesKey);
-    setCaughtModalStartingSpecies(speciesKey);
-    setCaughtModalLevel(1);
-    setCaughtModalNature(NATURES[0].name);
-    setCaughtModalAbility(defaultAbility);
-    setCaughtModalItem("");
-    setCaughtModalEvs(emptySpread(0));
-    setCaughtModalIvs(emptySpread(31));
-    setCaughtModalMoveset(["", "", "", ""]);
-    setCaughtModalError("");
-    setCaughtModalOpen(true);
+  const openProfileModalForEdit = (profile: CaughtPokemonProfile) => {
+    setProfileModalSpecies(profile.originalSpecies);
+    setProfileModalEditing(profile);
   };
 
-  const openCaughtModalForEdit = (profile: CaughtPokemonProfile) => {
-    if (!dataset) {
-      return;
-    }
-    const currentDetails = dataset.pokemon[profile.currentSpecies];
-    setCaughtModalOriginalSpecies(profile.originalSpecies);
-    setCaughtModalEditingId(profile.id);
-    setCaughtModalCurrentSpecies(profile.currentSpecies);
-    setCaughtModalStartingSpecies(profile.startingSpecies || profile.currentSpecies);
-    setCaughtModalLevel(profile.level);
-    setCaughtModalNature(profile.nature);
-    setCaughtModalAbility(profile.ability || currentDetails?.abilities[0] || "");
-    setCaughtModalItem(profile.item);
-    setCaughtModalEvs(profile.evs);
-    setCaughtModalIvs(profile.ivs);
-    setCaughtModalMoveset([...profile.moveset, "", "", "", ""].slice(0, 4));
-    setCaughtModalError("");
-    setCaughtModalOpen(true);
+  const closeProfileModal = () => {
+    setProfileModalSpecies(null);
+    setProfileModalEditing(null);
   };
 
-  const closeCaughtModal = () => {
-    setCaughtModalOpen(false);
-    setCaughtModalOriginalSpecies(null);
-    setCaughtModalEditingId(null);
-    setCaughtModalCurrentSpecies("");
-    setCaughtModalStartingSpecies("");
-    setCaughtModalError("");
-    setCaughtMovesLoading(false);
-  };
-
-  const saveCaughtProfile = () => {
-    if (!caughtModalOriginalSpecies) return;
-    const trimmedMoves = caughtModalMoveset.filter(Boolean);
-    if (caughtModalLevel < 1 || caughtModalLevel > 100) {
-      setCaughtModalError("Level must be between 1 and 100.");
-      return;
-    }
-    if (trimmedMoves.length === 0) {
-      setCaughtModalError("Choose at least one move.");
-      return;
-    }
-    const uniqueMoves = new Set(trimmedMoves);
-    if (uniqueMoves.size !== trimmedMoves.length) {
-      setCaughtModalError("Moveset cannot contain duplicate moves.");
-      return;
-    }
-    const learnable = new Set(caughtMoveKeys);
-    if (trimmedMoves.some((move) => !learnable.has(move))) {
-      setCaughtModalError("Selected move is not learnable by this Pokémon.");
-      return;
-    }
-    if (sumSpread(caughtModalEvs) > 510) {
-      setCaughtModalError("Total EVs cannot exceed 510.");
-      return;
-    }
-    const abilityAllowed = !caughtModalAbility || caughtAbilityOptions.some((a) => a.key === caughtModalAbility);
-    if (!abilityAllowed) {
-      setCaughtModalError("Selected ability is not available for this Pokémon.");
-      return;
-    }
-
-    const profile: CaughtPokemonProfile = {
-      id: caughtModalEditingId ?? `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-      originalSpecies: caughtModalOriginalSpecies,
-      currentSpecies: caughtModalCurrentSpecies || caughtModalOriginalSpecies,
-      startingSpecies: caughtModalStartingSpecies || caughtModalCurrentSpecies || caughtModalOriginalSpecies,
-      level: Math.max(1, Math.min(100, caughtModalLevel)),
-      nature: caughtModalNature,
-      ability: caughtModalAbility,
-      item: caughtModalItem,
-      evs: { ...caughtModalEvs },
-      ivs: { ...caughtModalIvs },
-      moveset: trimmedMoves,
-      updatedAt: new Date().toISOString(),
-    };
-
+  const saveProfile = (profile: CaughtPokemonProfile) => {
     setCaughtPokemonMap((current) => {
       const next: CaughtPokemonMap = {};
 
@@ -1016,19 +826,7 @@ function App() {
       next[targetSpecies] = [...(next[targetSpecies] ?? []), profile];
       return next;
     });
-    closeCaughtModal();
-  };
-
-  const updateCaughtMovesetSlot = (index: number, moveKey: string) => {
-    setCaughtModalMoveset((current) => {
-      const next = [...current];
-      next[index] = moveKey;
-      return next;
-    });
-  };
-
-  const toggleCaught = (id: string) => {
-    openCaughtModal(id);
+    closeProfileModal();
   };
 
   const selectedDetails = useMemo(() => {
@@ -1089,16 +887,6 @@ function App() {
     [tutorMoveSlugs, moveKeyBySlug],
   );
 
-  const caughtTmhmMoveKeys = useMemo(
-    () => caughtTmhmMoveSlugs.map((slug) => moveKeyBySlug.get(slug)).filter((key): key is string => Boolean(key)),
-    [caughtTmhmMoveSlugs, moveKeyBySlug],
-  );
-
-  const caughtTutorMoveKeys = useMemo(
-    () => caughtTutorMoveSlugs.map((slug) => moveKeyBySlug.get(slug)).filter((key): key is string => Boolean(key)),
-    [caughtTutorMoveSlugs, moveKeyBySlug],
-  );
-
   const learnableMoveKeys = useMemo(() => {
     if (!selectedDetails) {
       return [] as string[];
@@ -1145,74 +933,6 @@ function App() {
 
   const selectedBuilds = selectedSpecies ? (buildMap[selectedSpecies] ?? []) : [];
   const selectedCaughtProfiles = selectedSpecies ? (caughtPokemonMap[selectedSpecies] ?? []) : [];
-
-  const caughtModalCurrentDetails = useMemo(
-    () => (caughtModalCurrentSpecies && dataset ? dataset.pokemon[caughtModalCurrentSpecies] ?? null : null),
-    [caughtModalCurrentSpecies, dataset],
-  );
-
-  const caughtStartingSpeciesOptions = useMemo(() => {
-    if (!caughtModalCurrentSpecies) return [] as string[];
-    return findAncestorPath(caughtModalCurrentDetails?.evolutions ?? null, caughtModalCurrentSpecies);
-  }, [caughtModalCurrentDetails, caughtModalCurrentSpecies]);
-
-  const caughtAbilityOptions = useMemo(() => {
-    if (!caughtModalCurrentDetails || !dataset) {
-      return [] as Array<{ key: string; label: string }>;
-    }
-    return caughtModalCurrentDetails.abilities.map((key) => ({
-      key,
-      label: dataset.abilities[key]?.name ?? getDisplayToken(key),
-    }));
-  }, [caughtModalCurrentDetails, dataset]);
-
-  const caughtMoveKeys = useMemo(() => {
-    if (!caughtModalCurrentDetails) {
-      return [] as string[];
-    }
-    return [...new Set([
-      ...caughtModalCurrentDetails.levelUpMoves.map((learn) => learn.move),
-      ...caughtModalCurrentDetails.eggMoves,
-      ...caughtTmhmMoveKeys,
-      ...caughtTutorMoveKeys,
-    ])];
-  }, [caughtModalCurrentDetails, caughtTmhmMoveKeys, caughtTutorMoveKeys]);
-
-  const caughtMoveOptions = useMemo(() => {
-    if (!dataset) {
-      return [] as Array<{ key: string; label: string }>;
-    }
-    return caughtMoveKeys
-      .map((key) => ({
-        key,
-        label: dataset.moves[key]?.name ?? getDisplayToken(key),
-      }))
-      .sort((a, b) => a.label.localeCompare(b.label));
-  }, [caughtMoveKeys, dataset]);
-
-  const caughtCalculatedStats = useMemo(() => {
-    if (!caughtModalCurrentDetails) {
-      return null;
-    }
-    const nature = NATURE_BY_NAME.get(caughtModalNature);
-    const natureModifiers = getNatureModifiers(nature?.up ?? null, nature?.down ?? null);
-    return calculateCaughtPokemonStats(
-      caughtModalCurrentDetails.stats,
-      caughtModalLevel,
-      caughtModalIvs,
-      caughtModalEvs,
-      natureModifiers
-    );
-  }, [caughtModalCurrentDetails, caughtModalLevel, caughtModalNature, caughtModalIvs, caughtModalEvs]);
-
-  useEffect(() => {
-    if (!caughtModalOpen || !caughtModalCurrentDetails) return;
-    const valid = caughtModalAbility
-      && caughtModalCurrentDetails.abilities.includes(caughtModalAbility);
-    if (!valid) {
-      setCaughtModalAbility(caughtModalCurrentDetails.abilities[0] ?? "");
-    }
-  }, [caughtModalOpen, caughtModalCurrentDetails, caughtModalAbility]);
 
   // Pre-fetch move/ability descriptions for the selected Pokémon so hover popovers are instant.
   useEffect(() => {
@@ -1770,32 +1490,27 @@ function App() {
                       <span className={`chevron ${collapsedSections.has("caught") ? "collapsed" : ""}`}>▾</span>
                       <h3>Caught Pokémon</h3>
                     </button>
-                    {(selectedSpecies && (caughtCountBySpecies[selectedSpecies] ?? 0) > 0) ? (
+                    {selectedSpecies ? (
                       <button
                         type="button"
-                        className="status-pill btn-primary"
-                        onClick={() => selectedSpecies && openCaughtModal(selectedSpecies)}
+                        className={`pokeball-toggle ${caughtSpeciesMap[selectedSpecies] ? "active" : ""}`}
+                        onClick={() => toggleCaughtSpecies(selectedSpecies)}
+                        aria-pressed={Boolean(caughtSpeciesMap[selectedSpecies])}
+                        title={caughtSpeciesMap[selectedSpecies] ? "Marked as caught" : "Mark as caught"}
                       >
-                        Catch another
+                        <span className="pokeball-icon" aria-hidden="true" />
+                        {caughtSpeciesMap[selectedSpecies] ? "Caught" : "Not caught"}
                       </button>
-                    ) : (
-                      <button
-                        type="button"
-                        className="status-pill btn-primary"
-                        onClick={() => selectedSpecies && openCaughtModal(selectedSpecies)}
-                      >
-                        Mark as caught
-                      </button>
-                    )}
+                    ) : null}
                   </div>
                   {selectedCaughtProfiles.length > 0 ? (
                     <div className="caught-list">
                       {selectedCaughtProfiles.map((profile, index) => (
                         <div key={profile.id} className="caught-card">
                           <div className="caught-card-header">
-                            <span className="caught-card-title">Caught #{index + 1}</span>
+                            <span className="caught-card-title">Owned #{index + 1}</span>
                             <div className="modal-actions">
-                              <button type="button" className="status-pill" onClick={() => openCaughtModalForEdit(profile)}>
+                              <button type="button" className="status-pill" onClick={() => openProfileModalForEdit(profile)}>
                                 Update
                               </button>
                               <button
@@ -1969,7 +1684,10 @@ function App() {
                           . See that Pokémon's page for the full caught details.
                         </>
                       ) : (
-                        "This Pokémon is not marked as caught."
+                        <>
+                          This Pokémon has no owned instances yet. Add it to your{" "}
+                          <Link to="/boxes">Pokedex Boxes</Link> to record its stats (requires marking it as caught first).
+                        </>
                       )}
                     </p>
                   )}
@@ -2366,7 +2084,7 @@ function App() {
             ) : (
               visibleEntries.map((entry) => {
                 const caughtCountForSpecies = caughtCountBySpecies[entry.id] ?? 0;
-                const isCaught = caughtCountForSpecies > 0 || ancestorCaughtSpecies.has(entry.id);
+                const isCaught = Boolean(caughtSpeciesMap[entry.id]) || caughtCountForSpecies > 0 || ancestorCaughtSpecies.has(entry.id);
                 const details = dataset?.pokemon[entry.id];
                 const cardTypes = details?.types ?? [];
                 const stats = details?.stats;
@@ -2381,15 +2099,16 @@ function App() {
                       <div className="catch-btn-group">
                         <button
                           type="button"
-                          className={`status-pill ${isCaught ? "caught" : ""}`}
+                          className={`pokeball-toggle ${isCaught ? "active" : ""}`}
                           onClick={(event) => {
                             event.preventDefault();
                             event.stopPropagation();
-                            toggleCaught(entry.id);
+                            toggleCaughtSpecies(entry.id);
                           }}
                           aria-pressed={isCaught}
+                          title={isCaught ? "Marked as caught" : "Mark as caught"}
                         >
-                          Catch
+                          <span className="pokeball-icon" aria-hidden="true" />
                         </button>
                       </div>
                     </div>
@@ -2456,197 +2175,15 @@ function App() {
         ) : null}
       </section>
 
-      {caughtModalOpen ? (
-        <div className="modal-backdrop" role="dialog" aria-modal="true">
-          <section className="modal-card">
-            <h3>Configure Caught Pokémon</h3>
-            <p className="muted">Set the current state of this caught Pokémon. You can update this later.</p>
-
-            <div className="caught-fields-grid">
-              <label className="build-field">
-                Current Species
-                <input
-                  type="text"
-                  value={entries.find((entry) => entry.id === caughtModalCurrentSpecies)?.displayName
-                    ?? getDisplayToken(caughtModalCurrentSpecies.replace("SPECIES_", ""))}
-                  disabled
-                />
-              </label>
-
-              <label className="build-field">
-                Originally Caught As
-                <select
-                  value={caughtModalStartingSpecies}
-                  onChange={(event) => setCaughtModalStartingSpecies(event.target.value)}
-                  disabled={caughtStartingSpeciesOptions.length <= 1}
-                >
-                  {caughtStartingSpeciesOptions.map((speciesKey) => (
-                    <option key={speciesKey} value={speciesKey}>
-                      {entries.find((entry) => entry.id === speciesKey)?.displayName
-                        ?? getDisplayToken(speciesKey.replace("SPECIES_", ""))}
-                    </option>
-                  ))}
-                </select>
-              </label>
-
-              <label className="build-field">
-                Level
-                <input
-                  type="number"
-                  min={1}
-                  max={100}
-                  value={caughtModalLevel}
-                  onFocus={(event) => event.target.select()}
-                  onChange={(event) => {
-                    const value = Number.parseInt(event.target.value, 10);
-                    setCaughtModalLevel(Number.isNaN(value) ? 1 : Math.max(1, Math.min(100, value)));
-                  }}
-                />
-              </label>
-
-              <label className="build-field">
-                Nature
-                <select
-                  value={caughtModalNature}
-                  onChange={(event) => setCaughtModalNature(event.target.value)}
-                >
-                  {NATURES.map((nature) => (
-                    <option key={nature.name} value={nature.name}>{formatNatureLabel(nature.name)}</option>
-                  ))}
-                </select>
-              </label>
-
-              <label className="build-field">
-                Ability
-                <select
-                  value={caughtModalAbility}
-                  onChange={(event) => setCaughtModalAbility(event.target.value)}
-                >
-                  <option value="">(none)</option>
-                  {caughtAbilityOptions.map((ability) => (
-                    <option key={ability.key} value={ability.key}>{ability.label}</option>
-                  ))}
-                </select>
-              </label>
-
-              <label className="build-field">
-                Item
-                <select
-                  value={caughtModalItem}
-                  onChange={(event) => setCaughtModalItem(event.target.value)}
-                >
-                  <option value="">(none)</option>
-                  {buildItemOptions.map((item) => (
-                    <option key={item.key} value={item.key}>{item.label}</option>
-                  ))}
-                </select>
-              </label>
-            </div>
-
-            <div className="build-spreads">
-              <div>
-                <h4>EVs</h4>
-                <div className="build-spread-grid">
-                  {BUILD_STATS.map((stat) => (
-                    <label key={`caught-ev-${stat.key}`} className="build-field">
-                      {stat.label}
-                      <input
-                        type="number"
-                        min={0}
-                        max={252}
-                        value={caughtModalEvs[stat.key]}
-                        onChange={(event) => updateSpreadValue(setCaughtModalEvs, stat.key, event.target.value, 252)}
-                      />
-                    </label>
-                  ))}
-                </div>
-                <p className={sumSpread(caughtModalEvs) > 510 ? "error-text" : "muted"}>
-                  Total EVs: {sumSpread(caughtModalEvs)}/510
-                </p>
-              </div>
-
-              <div>
-                <h4>IVs</h4>
-                <div className="build-spread-grid">
-                  {BUILD_STATS.map((stat) => (
-                    <label key={`caught-iv-${stat.key}`} className="build-field">
-                      {stat.label}
-                      <input
-                        type="number"
-                        min={0}
-                        max={31}
-                        value={caughtModalIvs[stat.key]}
-                        onChange={(event) => updateSpreadValue(setCaughtModalIvs, stat.key, event.target.value, 31)}
-                      />
-                    </label>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            {caughtCalculatedStats ? (
-              <div>
-                <h4>Calculated Stats</h4>
-                <div className="stats-grid">
-                  {[
-                    ["HP", caughtCalculatedStats.hp],
-                    ["Atk", caughtCalculatedStats.attack],
-                    ["Def", caughtCalculatedStats.defense],
-                    ["SpA", caughtCalculatedStats.spAttack],
-                    ["SpD", caughtCalculatedStats.spDefense],
-                    ["Spe", caughtCalculatedStats.speed],
-                    ["Total", caughtCalculatedStats.total],
-                  ].map(([label, value]) => (
-                    <div key={label} className="stat-row">
-                      <span className="stat-label">{label}</span>
-                      <span className="stat-bar-wrap">
-                        <span
-                          className="stat-bar"
-                          style={{ width: `${Math.min(100, Math.round((Number(value) / 255) * 100))}%` }}
-                        />
-                      </span>
-                      <span className="stat-value">{value}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ) : null}
-
-            <div>
-              <h4>Moveset</h4>
-              {caughtMovesLoading ? <p className="muted">Loading TM/HM and tutor moves…</p> : null}
-              <div className="build-moves-grid">
-                {caughtModalMoveset.map((moveKey, slotIndex) => (
-                  <label key={`caught-move-slot-${slotIndex}`} className="build-field">
-                    Move {slotIndex + 1}
-                    <select
-                      value={moveKey}
-                      onChange={(event) => updateCaughtMovesetSlot(slotIndex, event.target.value)}
-                    >
-                      <option value="">(empty)</option>
-                      {caughtMoveOptions.map((option) => {
-                        const inOtherSlot =
-                          caughtModalMoveset.includes(option.key) && caughtModalMoveset[slotIndex] !== option.key;
-                        return (
-                          <option key={option.key} value={option.key} disabled={inOtherSlot}>
-                            {option.label}
-                          </option>
-                        );
-                      })}
-                    </select>
-                  </label>
-                ))}
-              </div>
-            </div>
-
-            {caughtModalError ? <p className="error-text">{caughtModalError}</p> : null}
-
-            <div className="modal-actions">
-              <button type="button" className="btn-primary" onClick={saveCaughtProfile}>Save</button>
-              <button type="button" className="status-pill" onClick={closeCaughtModal}>Cancel</button>
-            </div>
-          </section>
-        </div>
+      {profileModalSpecies && dataset ? (
+        <CaughtProfileModal
+          dataset={dataset}
+          entries={entries}
+          originalSpecies={profileModalSpecies}
+          initialProfile={profileModalEditing}
+          onSave={saveProfile}
+          onClose={closeProfileModal}
+        />
       ) : null}
     </main>
   );

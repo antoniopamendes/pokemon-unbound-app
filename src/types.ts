@@ -125,6 +125,11 @@ export type CaughtPokemonProfile = {
 
 export type CaughtPokemonMap = Record<string, CaughtPokemonProfile[]>;
 
+// ---- Simple "caught" tracking (main pokedex progress) ----
+
+/** Species key -> whether the player has caught (encountered/captured) this species at all. */
+export type CaughtSpeciesMap = Record<string, boolean>;
+
 // ---- Pokedex Boxes (PC storage) ----
 
 /** A single storage slot: the id of the caught profile stored there, or empty. */
@@ -136,4 +141,7 @@ export type PokemonBox = {
 };
 
 export type BoxesData = PokemonBox[];
+
+/** The 6 Pokémon a player carries with them (not stored in any box). */
+export type PartyData = BoxSlot[];
 
