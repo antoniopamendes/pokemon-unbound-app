@@ -204,7 +204,7 @@ export function CaughtProfileModal({ dataset, entries, originalSpecies, initialP
 
         <div className="caught-fields-grid">
           <label className="build-field">
-            Current Species
+            Current Pokemon
             <input
               type="text"
               value={entries.find((entry) => entry.id === currentSpecies)?.displayName

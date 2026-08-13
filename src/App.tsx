@@ -24,6 +24,7 @@ import { getDisplayToken, getUnboundDataset } from "./unboundData";
 import { useCloudSync } from "./useCloudSync";
 import { getNatureModifiers } from "./statCalculator";
 import { getTypeColor, getTypeTextColor } from "./typeColors";
+import { speciesIdToSlug, slugToSpeciesId } from "./speciesSlug";
 import { bucketizeMatchups, getTypeMatchups } from "./typeEffectiveness";
 import {
   BUILD_STATS,
@@ -480,8 +481,8 @@ function App() {
   const [partyData, setPartyData] = useState<PartyData>(() => loadPartyData());
   const params = useParams<{ id?: string }>();
   const navigate = useNavigate();
-  const selectedSpecies = params.id ?? null;
-  const goToSpecies = (id: string) => navigate(`/pokemon/${id}`);
+  const selectedSpecies = params.id ? slugToSpeciesId(params.id) : null;
+  const goToSpecies = (id: string) => navigate(`/pokemon/${speciesIdToSlug(id)}`);
 
   // Refresh box/party placement info whenever the user opens a species detail page.
   useEffect(() => {
@@ -2007,7 +2008,7 @@ function App() {
                 return (
                   <Link
                     key={entry.id}
-                    to={`/pokemon/${entry.id}`}
+                    to={`/pokemon/${speciesIdToSlug(entry.id)}`}
                     className={`pokemon-card ${isCaught ? "caught" : ""} ${compactView ? "pokemon-card-compact" : ""}`}
                   >
                     <div className="pokemon-card-top">

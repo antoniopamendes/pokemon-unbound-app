@@ -2424,7 +2424,8 @@ input[type="number"]::-webkit-inner-spin-button {
   }
 
   .party-grid {
-    gap: 0.7rem;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.9rem;
   }
 
   .box-grid {
@@ -2438,12 +2439,32 @@ input[type="number"]::-webkit-inner-spin-button {
   }
 
   .party-grid .box-sprite {
-    max-width: 52px;
-    max-height: 52px;
+    max-width: 64px;
+    max-height: 64px;
   }
 
   .team-roster-moves {
     grid-template-columns: 1fr;
+  }
+
+  .team-roster-card-vertical {
+    font-size: 0.95rem;
+  }
+
+  .team-roster-stats {
+    font-size: 0.85rem;
+    gap: 0.6rem 0.9rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .party-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .party-grid .box-sprite {
+    max-width: 56px;
+    max-height: 56px;
   }
 }
 

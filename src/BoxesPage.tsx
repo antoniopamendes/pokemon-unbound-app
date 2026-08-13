@@ -23,6 +23,7 @@ import {
 import { getDisplayToken, getUnboundDataset } from "./unboundData";
 import { useCloudSync } from "./useCloudSync";
 import { getTypeColor, getTypeTextColor } from "./typeColors";
+import { speciesIdToSlug } from "./speciesSlug";
 import { ALL_TYPES, getTypeMatchups } from "./typeEffectiveness";
 import type {
   BoxesData,
@@ -857,7 +858,7 @@ export default function BoxesPage() {
               <button
                 type="button"
                 className="account-btn"
-                onClick={() => navigate(`/pokemon/${actionProfile.currentSpecies}`)}
+                onClick={() => navigate(`/pokemon/${speciesIdToSlug(actionProfile.currentSpecies)}`)}
               >
                 View Pokemon Page
               </button>
