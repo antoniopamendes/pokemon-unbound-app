@@ -35,7 +35,10 @@ Detailed Unbound Pokedex tracker with:
 ## Optional: cross-device sync (free, via Supabase)
 
 By default all progress is stored only in your browser's localStorage. To sync your caught
-Pokemon/builds across devices for free:
+Pokemon/builds across devices for free. Local edits are kept in the browser and cloud sync is
+manual: use **Push changes** to upload the complete local snapshot, or **Clear changes** to
+restore the last cloud version after confirming. Opening the app, loading cached data, and
+editing progress do not contact Supabase.
 
 1. Create a free project at [supabase.com](https://supabase.com).
 2. In the Supabase SQL editor, run `docs/supabase-setup.sql` to create the storage table and
@@ -45,7 +48,7 @@ Pokemon/builds across devices for free:
 5. In Supabase, go to Authentication -> URL Configuration and add your app's URL (e.g. your
    Vercel domain and `http://localhost:5173`) to the redirect allow list.
 6. Restart the dev server / redeploy. A "Sign in to sync" button appears in the header; sign in
-   with a magic link sent to your email, on any device, to see the same caught Pokemon everywhere.
+   with a magic link sent to your email, on any device, to use the manual sync controls.
 
 If these env vars aren't set, the app works exactly as before (localStorage only, no sign-in UI).
 

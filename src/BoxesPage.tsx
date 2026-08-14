@@ -3,12 +3,14 @@ import type { DragEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { SpriteImage, usePopover } from "./App";
 import { CaughtProfileModal } from "./CaughtProfileModal";
+import { CloudSyncControls } from "./CloudSyncControls";
 import { fetchUnboundPokedex } from "./pokedex";
 import { BUILD_STATS, NATURE_BY_NAME, formatNatureLabel, sumSpread } from "./pokemonBuild";
 import { calculateCaughtPokemonStats, getNatureModifiers } from "./statCalculator";
 import {
   BOX_COLUMNS,
   BOX_SLOT_COUNT,
+  LOCAL_DATA_CHANGED_EVENT,
   PARTY_SLOT_COUNT,
   createNewBox,
   loadBoxesData,
@@ -73,16 +75,18 @@ export default function BoxesPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const cloudSync = useCloudSync({
-    caughtPokemonMap,
-    setCaughtPokemonMap,
-    boxesData,
-    setBoxesData,
-    caughtSpeciesMap,
-    setCaughtSpeciesMap,
-    partyData,
-    setPartyData,
-  });
+  const cloudSync = useCloudSync();
+
+  useEffect(() => {
+    const onLocalDataChanged = () => {
+      setCaughtPokemonMap(loadCaughtPokemonMap());
+      setCaughtSpeciesMap(loadCaughtSpeciesMap());
+      setBoxesData(loadBoxesData());
+      setPartyData(loadPartyData());
+    };
+    window.addEventListener(LOCAL_DATA_CHANGED_EVENT, onLocalDataChanged);
+    return () => window.removeEventListener(LOCAL_DATA_CHANGED_EVENT, onLocalDataChanged);
+  }, []);
 
   useEffect(() => {
     const run = async () => {
@@ -466,11 +470,7 @@ export default function BoxesPage() {
               <h1>Pokedex Boxes</h1>
               <p className="subtitle">Store and organize your caught Pokemon, PC-box style.</p>
             </div>
-            {cloudSync.isCloudEnabled && cloudSync.user && (
-              <span className={`sync-status sync-status-${cloudSync.syncStatus}`}>
-                {cloudSync.syncStatus === "syncing" ? "Syncing…" : "Synced"}
-              </span>
-            )}
+            <CloudSyncControls cloudSync={cloudSync} />
           </div>
         </header>
 

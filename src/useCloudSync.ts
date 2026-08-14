@@ -1,69 +1,37 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import type { Session, User } from "@supabase/supabase-js";
+import {
+  fingerprintDataSnapshot,
+  LOCAL_DATA_CHANGED_EVENT,
+  loadDataSnapshot,
+  normalizeDataSnapshot,
+  replaceDataSnapshot,
+} from "./storage";
 import { isSupabaseConfigured, supabase } from "./supabaseClient";
-import type { BoxesData, BuildMap, CaughtPokemonMap, CaughtSpeciesMap, PartyData } from "./types";
 
 export type CloudSyncStatus = "idle" | "syncing" | "synced" | "error";
+type SyncResult = { ok: boolean; reason?: "not-authenticated" | "error" | "missing" };
 
-function isCaughtMapEmpty(map: CaughtPokemonMap | undefined): boolean {
-  return !map || Object.keys(map).length === 0;
-}
+const LAST_CLOUD_FINGERPRINT_PREFIX = "unbound-tracker-last-cloud-fingerprint-v1:";
 
-function isBuildMapEmpty(map: BuildMap | undefined): boolean {
-  return !map || Object.keys(map).length === 0;
-}
-
-function isBoxesDataEmpty(boxes: BoxesData | undefined): boolean {
-  return !boxes || boxes.every((box) => box.slots.every((slot) => slot === null));
-}
-
-function isCaughtSpeciesMapEmpty(map: CaughtSpeciesMap | undefined): boolean {
-  return !map || Object.keys(map).length === 0;
-}
-
-function isPartyDataEmpty(party: PartyData | undefined): boolean {
-  return !party || party.every((slot) => slot === null);
+function fingerprintKey(userId: string): string {
+  return `${LAST_CLOUD_FINGERPRINT_PREFIX}${userId}`;
 }
 
 /**
  * Optional cloud sync via Supabase (magic-link auth + a single JSONB row per user).
- * When Supabase env vars aren't configured, everything here is a no-op and the app
- * keeps working purely off localStorage, so this feature is fully opt-in.
- *
- * Each caller only passes the slice(s) of data it owns (e.g. the main Pokedex page
- * owns caughtPokemonMap/buildMap, the Boxes page owns boxesData). Only the columns a
- * caller owns are pushed to Supabase, so one page can never silently wipe out data
- * managed by another page.
+ * Local storage remains the source of truth while the app is open. Cloud reads and
+ * writes happen only when the user explicitly invokes one of the sync operations.
  */
-export function useCloudSync(params: {
-  caughtPokemonMap?: CaughtPokemonMap;
-  setCaughtPokemonMap?: (value: CaughtPokemonMap) => void;
-  buildMap?: BuildMap;
-  setBuildMap?: (value: BuildMap) => void;
-  boxesData?: BoxesData;
-  setBoxesData?: (value: BoxesData) => void;
-  caughtSpeciesMap?: CaughtSpeciesMap;
-  setCaughtSpeciesMap?: (value: CaughtSpeciesMap) => void;
-  partyData?: PartyData;
-  setPartyData?: (value: PartyData) => void;
-}) {
-  const {
-    caughtPokemonMap, setCaughtPokemonMap,
-    buildMap, setBuildMap,
-    boxesData, setBoxesData,
-    caughtSpeciesMap, setCaughtSpeciesMap,
-    partyData, setPartyData,
-  } = params;
+export function useCloudSync() {
   const [session, setSession] = useState<Session | null>(null);
   const [authLoading, setAuthLoading] = useState(isSupabaseConfigured);
   const [magicLinkSent, setMagicLinkSent] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
   const [syncStatus, setSyncStatus] = useState<CloudSyncStatus>("idle");
-  const suppressPushRef = useRef(false);
-  const hasPulledRef = useRef(false);
-  const pushTimerRef = useRef<number | null>(null);
-  const latestLocalRef = useRef({ caughtPokemonMap, buildMap, boxesData, caughtSpeciesMap, partyData });
-  latestLocalRef.current = { caughtPokemonMap, buildMap, boxesData, caughtSpeciesMap, partyData };
+  const [syncMessage, setSyncMessage] = useState<string | null>(null);
+  const [localFingerprint, setLocalFingerprint] = useState(() => fingerprintDataSnapshot());
+  const [lastCloudFingerprint, setLastCloudFingerprint] = useState<string | null>(null);
 
   const user: User | null = session?.user ?? null;
 
@@ -78,133 +46,117 @@ export function useCloudSync(params: {
     });
     const { data: listener } = supabase.auth.onAuthStateChange((_event, newSession) => {
       setSession(newSession);
-      if (!newSession) {
-        hasPulledRef.current = false;
-      }
     });
     return () => listener.subscription.unsubscribe();
   }, []);
 
-  // Pull remote data once per sign-in; migrate local data up on a brand-new account.
   useEffect(() => {
-    if (!supabase || !user || hasPulledRef.current) {
+    const onLocalDataChanged = () => {
+      setLocalFingerprint(fingerprintDataSnapshot());
+      setSyncStatus((current) => (current === "syncing" ? current : "idle"));
+      setSyncMessage(null);
+    };
+    window.addEventListener(LOCAL_DATA_CHANGED_EVENT, onLocalDataChanged);
+    return () => window.removeEventListener(LOCAL_DATA_CHANGED_EVENT, onLocalDataChanged);
+  }, []);
+
+  useEffect(() => {
+    if (!user) {
+      setLastCloudFingerprint(null);
+      setSyncStatus("idle");
+      setSyncMessage(null);
       return;
     }
-    hasPulledRef.current = true;
-    setSyncStatus("syncing");
-    const client = supabase;
-
-    const run = async () => {
-      const { data, error } = await client
-        .from("user_data")
-        .select("caught_pokemon_map, build_map, boxes_data, caught_species_map, party_data")
-        .eq("user_id", user.id)
-        .maybeSingle();
-
-      if (error) {
-        console.warn("Failed to load cloud data", error);
-        setSyncStatus("error");
-        return;
-      }
-
-      suppressPushRef.current = true;
-      const remoteCaught = (data?.caught_pokemon_map as CaughtPokemonMap | undefined) ?? {};
-      const remoteBuild = (data?.build_map as BuildMap | undefined) ?? {};
-      const remoteBoxes = (data?.boxes_data as BoxesData | undefined) ?? [];
-      const remoteCaughtSpecies = (data?.caught_species_map as CaughtSpeciesMap | undefined) ?? {};
-      const remoteParty = (data?.party_data as PartyData | undefined) ?? [];
-
-      // If the remote column looks empty but we already have local data for it, this row was
-      // likely created by another page that doesn't own this column — keep local data instead
-      // of wiping it, and let the push effect below upload it.
-      if (setCaughtPokemonMap) {
-        const keepLocal = isCaughtMapEmpty(remoteCaught) && !isCaughtMapEmpty(latestLocalRef.current.caughtPokemonMap);
-        if (!keepLocal) {
-          setCaughtPokemonMap(remoteCaught);
-        }
-      }
-      if (setBuildMap) {
-        const keepLocal = isBuildMapEmpty(remoteBuild) && !isBuildMapEmpty(latestLocalRef.current.buildMap);
-        if (!keepLocal) {
-          setBuildMap(remoteBuild);
-        }
-      }
-      if (setBoxesData) {
-        const keepLocal = isBoxesDataEmpty(remoteBoxes) && !isBoxesDataEmpty(latestLocalRef.current.boxesData);
-        if (!keepLocal && remoteBoxes.length > 0) {
-          setBoxesData(remoteBoxes);
-        }
-      }
-      if (setCaughtSpeciesMap) {
-        const keepLocal = isCaughtSpeciesMapEmpty(remoteCaughtSpecies) && !isCaughtSpeciesMapEmpty(latestLocalRef.current.caughtSpeciesMap);
-        if (!keepLocal) {
-          setCaughtSpeciesMap(remoteCaughtSpecies);
-        }
-      }
-      if (setPartyData) {
-        const keepLocal = isPartyDataEmpty(remoteParty) && !isPartyDataEmpty(latestLocalRef.current.partyData);
-        if (!keepLocal && remoteParty.length > 0) {
-          setPartyData(remoteParty);
-        }
-      }
-
-      window.setTimeout(() => {
-        suppressPushRef.current = false;
-      }, 0);
-      setSyncStatus("synced");
-    };
-
-    void run();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    setLastCloudFingerprint(localStorage.getItem(fingerprintKey(user.id)));
+    setSyncStatus("idle");
+    setSyncMessage(null);
   }, [user]);
 
-  // Push local changes up to the cloud (debounced) once signed in.
-  useEffect(() => {
-    if (!supabase || !user || suppressPushRef.current || !hasPulledRef.current) {
-      return;
+  const hasPendingChanges = Boolean(
+    user && (lastCloudFingerprint === null || localFingerprint !== lastCloudFingerprint),
+  );
+
+  const pushChanges = useCallback(async (): Promise<SyncResult> => {
+    if (!supabase || !user) {
+      return { ok: false, reason: "not-authenticated" };
     }
-    if (pushTimerRef.current) {
-      window.clearTimeout(pushTimerRef.current);
-    }
+
     setSyncStatus("syncing");
-    const client = supabase;
-    pushTimerRef.current = window.setTimeout(() => {
-      const payload: Record<string, unknown> = {
-        user_id: user.id,
-        updated_at: new Date().toISOString(),
-      };
-      if (setCaughtPokemonMap) {
-        payload.caught_pokemon_map = caughtPokemonMap ?? {};
-      }
-      if (setBuildMap) {
-        payload.build_map = buildMap ?? {};
-      }
-      if (setBoxesData) {
-        payload.boxes_data = boxesData ?? [];
-      }
-      if (setCaughtSpeciesMap) {
-        payload.caught_species_map = caughtSpeciesMap ?? {};
-      }
-      if (setPartyData) {
-        payload.party_data = partyData ?? [];
-      }
-      void client
-        .from("user_data")
-        .upsert(payload)
-        .then(({ error }) => {
-          setSyncStatus(error ? "error" : "synced");
-          if (error) {
-            console.warn("Failed to sync to cloud", error);
-          }
-        });
-    }, 800);
-    return () => {
-      if (pushTimerRef.current) {
-        window.clearTimeout(pushTimerRef.current);
-      }
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [caughtPokemonMap, buildMap, boxesData, caughtSpeciesMap, partyData, user]);
+    setSyncMessage(null);
+    const snapshot = loadDataSnapshot();
+    const uploadedFingerprint = fingerprintDataSnapshot(snapshot);
+    const { error } = await supabase.from("user_data").upsert({
+      user_id: user.id,
+      caught_pokemon_map: snapshot.caughtPokemonMap,
+      build_map: snapshot.buildMap,
+      boxes_data: snapshot.boxesData,
+      caught_species_map: snapshot.caughtSpeciesMap,
+      party_data: snapshot.partyData,
+      updated_at: new Date().toISOString(),
+    });
+
+    if (error) {
+      console.warn("Failed to push changes to cloud", error);
+      setSyncStatus("error");
+      setSyncMessage("Push failed. Your local changes were kept.");
+      return { ok: false, reason: "error" };
+    }
+
+    localStorage.setItem(fingerprintKey(user.id), uploadedFingerprint);
+    setLastCloudFingerprint(uploadedFingerprint);
+    const currentFingerprint = fingerprintDataSnapshot();
+    setLocalFingerprint(currentFingerprint);
+    setSyncStatus("synced");
+    setSyncMessage(
+      currentFingerprint === uploadedFingerprint
+        ? "Changes pushed to cloud."
+        : "Changes pushed; newer local changes are still pending.",
+    );
+    return { ok: true };
+  }, [user]);
+
+  const restoreCloudVersion = useCallback(async (): Promise<SyncResult> => {
+    if (!supabase || !user) {
+      return { ok: false, reason: "not-authenticated" };
+    }
+
+    setSyncStatus("syncing");
+    setSyncMessage(null);
+    const { data, error } = await supabase
+      .from("user_data")
+      .select("caught_pokemon_map, build_map, boxes_data, caught_species_map, party_data")
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    if (error) {
+      console.warn("Failed to restore cloud version", error);
+      setSyncStatus("error");
+      setSyncMessage("Restore failed. Your local changes were kept.");
+      return { ok: false, reason: "error" };
+    }
+
+    if (!data) {
+      setSyncStatus("error");
+      setSyncMessage("No cloud save exists yet. Your local changes were kept.");
+      return { ok: false, reason: "missing" };
+    }
+
+    const snapshot = normalizeDataSnapshot({
+      caughtPokemonMap: data.caught_pokemon_map,
+      buildMap: data.build_map,
+      boxesData: data.boxes_data,
+      caughtSpeciesMap: data.caught_species_map,
+      partyData: data.party_data,
+    });
+    replaceDataSnapshot(snapshot);
+    const restoredFingerprint = fingerprintDataSnapshot(snapshot);
+    localStorage.setItem(fingerprintKey(user.id), restoredFingerprint);
+    setLastCloudFingerprint(restoredFingerprint);
+    setLocalFingerprint(restoredFingerprint);
+    setSyncStatus("synced");
+    setSyncMessage("Cloud version restored.");
+    return { ok: true };
+  }, [user]);
 
   const signInWithEmail = useCallback(async (email: string) => {
     if (!supabase) {
@@ -228,7 +180,8 @@ export function useCloudSync(params: {
       return;
     }
     await supabase.auth.signOut();
-    hasPulledRef.current = false;
+    setSyncStatus("idle");
+    setSyncMessage(null);
   }, []);
 
   return {
@@ -238,8 +191,14 @@ export function useCloudSync(params: {
     magicLinkSent,
     authError,
     syncStatus,
+    syncMessage,
+    hasPendingChanges,
+    pushChanges,
+    restoreCloudVersion,
     signInWithEmail,
     signOut,
     clearMagicLinkSent: () => setMagicLinkSent(false),
   };
 }
+
+export type CloudSyncApi = ReturnType<typeof useCloudSync>;

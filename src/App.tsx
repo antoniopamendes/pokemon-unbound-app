@@ -11,6 +11,7 @@ import {
   fetchPokemonSpriteUrl,
 } from "./pokeApi";
 import {
+  LOCAL_DATA_CHANGED_EVENT,
   loadBoxesData,
   loadBuildMap,
   loadCaughtPokemonMap,
@@ -20,6 +21,7 @@ import {
   saveCaughtPokemonMap,
   saveCaughtSpeciesMap,
 } from "./storage";
+import { CloudSyncControls } from "./CloudSyncControls";
 import { getDisplayToken, getUnboundDataset } from "./unboundData";
 import { useCloudSync } from "./useCloudSync";
 import { getNatureModifiers } from "./statCalculator";
@@ -540,16 +542,21 @@ function App() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { show: popShow, move: popMove, hide: popHide, toggle: popToggle, popoverEl } = usePopover();
-  const cloudSync = useCloudSync({
-    caughtPokemonMap,
-    buildMap,
-    setCaughtPokemonMap,
-    setBuildMap,
-    caughtSpeciesMap,
-    setCaughtSpeciesMap,
-  });
+  const cloudSync = useCloudSync();
   const [accountMenuOpen, setAccountMenuOpen] = useState(false);
   const [accountEmail, setAccountEmail] = useState("");
+
+  useEffect(() => {
+    const onLocalDataChanged = () => {
+      setCaughtPokemonMap(loadCaughtPokemonMap());
+      setBuildMap(loadBuildMap());
+      setCaughtSpeciesMap(loadCaughtSpeciesMap());
+      setBoxesData(loadBoxesData());
+      setPartyData(loadPartyData());
+    };
+    window.addEventListener(LOCAL_DATA_CHANGED_EVENT, onLocalDataChanged);
+    return () => window.removeEventListener(LOCAL_DATA_CHANGED_EVENT, onLocalDataChanged);
+  }, []);
 
   useEffect(() => {
     localStorage.setItem("unbound-tracker-compact-view", compactView ? "1" : "0");
@@ -1115,9 +1122,7 @@ function App() {
                     <span className="account-email" title={cloudSync.user.email ?? ""}>
                       {cloudSync.user.email}
                     </span>
-                    <span className={`sync-status sync-status-${cloudSync.syncStatus}`}>
-                      {cloudSync.syncStatus === "syncing" ? "Syncing…" : "Synced"}
-                    </span>
+                    <CloudSyncControls cloudSync={cloudSync} />
                     <button type="button" className="account-btn" onClick={() => void cloudSync.signOut()}>
                       Sign out
                     </button>
