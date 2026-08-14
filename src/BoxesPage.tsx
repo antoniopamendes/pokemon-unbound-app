@@ -1,9 +1,9 @@
-import { useEffect, useMemo, useState } from "react";
-import type { DragEvent } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import type { DragEvent, PointerEvent as ReactPointerEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { SpriteImage, usePopover } from "./App";
 import { CaughtProfileModal } from "./CaughtProfileModal";
-import { CloudSyncControls } from "./CloudSyncControls";
+import { parseBoxImport, profileFromImport, rebindBoxImportRow, type BoxImportRow } from "./boxImport";
 import { fetchUnboundPokedex } from "./pokedex";
 import { BUILD_STATS, NATURE_BY_NAME, formatNatureLabel, sumSpread } from "./pokemonBuild";
 import { calculateCaughtPokemonStats, getNatureModifiers } from "./statCalculator";
@@ -23,10 +23,9 @@ import {
   savePartyData,
 } from "./storage";
 import { getDisplayToken, getUnboundDataset } from "./unboundData";
-import { useCloudSync } from "./useCloudSync";
 import { getTypeColor, getTypeTextColor } from "./typeColors";
 import { speciesIdToSlug } from "./speciesSlug";
-import { ALL_TYPES, getTypeMatchups } from "./typeEffectiveness";
+import { ALL_TYPES, getAbilityAdjustedTypeMatchups } from "./typeEffectiveness";
 import type {
   BoxesData,
   CaughtPokemonMap,
@@ -70,12 +69,27 @@ export default function BoxesPage() {
   const [newProfileSpecies, setNewProfileSpecies] = useState<string | null>(null);
   const [actionLocation, setActionLocation] = useState<SlotLocation | null>(null);
   const [editingProfile, setEditingProfile] = useState<CaughtPokemonProfile | null>(null);
+  const [importBoxIndex, setImportBoxIndex] = useState<number | null>(null);
+  const [importText, setImportText] = useState("");
+  const [importRows, setImportRows] = useState<BoxImportRow[]>([]);
+  const [importErrors, setImportErrors] = useState<string[]>([]);
+  const [importProcessed, setImportProcessed] = useState(false);
+  const [importPickerRowIndex, setImportPickerRowIndex] = useState<number | null>(null);
+  const [importPickerSearch, setImportPickerSearch] = useState("");
   const [dragSource, setDragSource] = useState<SlotLocation | null>(null);
+  const [dragTarget, setDragTarget] = useState<SlotLocation | null>(null);
+  const pointerDragRef = useRef<{
+    source: SlotLocation;
+    pointerId: number;
+    startX: number;
+    startY: number;
+    active: boolean;
+  } | null>(null);
+  const suppressClickRef = useRef(false);
   const [teamOverviewCollapsed, setTeamOverviewCollapsed] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const cloudSync = useCloudSync();
 
   useEffect(() => {
     const onLocalDataChanged = () => {
@@ -157,6 +171,17 @@ export default function BoxesPage() {
     [caughtPokemonMap],
   );
 
+  const importAvailableSlots = importBoxIndex === null
+    ? 0
+    : (boxesData[importBoxIndex]?.slots.filter((slot) => slot === null).length ?? 0);
+  const importIncludedRows = importRows.filter((row) => row.include && row.errors.length === 0 && row.speciesId);
+  const importSpeciesOptions = useMemo(() => {
+    const query = importPickerSearch.trim().toLowerCase();
+    return entries
+      .filter((entry) => !query || entry.displayName.toLowerCase().includes(query) || entry.rawKey.toLowerCase().includes(query))
+      .sort((a, b) => a.dexOrder - b.dexOrder);
+  }, [entries, importPickerSearch]);
+
   // Owned Pokémon that aren't currently placed in any box or party slot (e.g. "removed" from a
   // slot without being released) — surfaced so they can be re-assigned or fully released.
   const unassignedProfiles = useMemo(
@@ -221,23 +246,37 @@ export default function BoxesPage() {
     return totals;
   }, [partyMemberStats]);
 
-  // For each attacking type, how many party members are weak/resistant/immune to it —
-  // helps spot team-wide type coverage gaps.
+  // For each attacking type, count effective defensive coverage across the party.
+  // 2x weaknesses and 1/2x resistances are worth one point; 4x weaknesses and
+  // 1/4x resistances are worth four; immunities are worth two resist points.
   const teamTypeCoverage = useMemo(() => {
-    const coverage: Record<string, { weak: number; resist: number; immune: number }> = {};
+    const coverage: Record<string, {
+      weak: number;
+      resist: number;
+      immune: number;
+      weakPoints: number;
+      resistPoints: number;
+    }> = {};
     for (const type of ALL_TYPES) {
-      coverage[type] = { weak: 0, resist: 0, immune: 0 };
+      coverage[type] = { weak: 0, resist: 0, immune: 0, weakPoints: 0, resistPoints: 0 };
     }
     if (!dataset) return coverage;
     for (const profile of partyMembers) {
       const details = dataset.pokemon[profile.currentSpecies];
       if (!details) continue;
-      const matchups = getTypeMatchups(details.types);
+      const matchups = getAbilityAdjustedTypeMatchups(details.types, profile.ability);
       for (const type of ALL_TYPES) {
         const multiplier = matchups[type] ?? 1;
-        if (multiplier === 0) coverage[type].immune += 1;
-        else if (multiplier > 1) coverage[type].weak += 1;
-        else if (multiplier < 1) coverage[type].resist += 1;
+        if (multiplier === 0) {
+          coverage[type].immune += 1;
+          coverage[type].resistPoints += 2;
+        } else if (multiplier > 1) {
+          coverage[type].weak += 1;
+          coverage[type].weakPoints += multiplier >= 4 ? 4 : 1;
+        } else if (multiplier < 1) {
+          coverage[type].resist += 1;
+          coverage[type].resistPoints += multiplier <= 0.25 ? 4 : 1;
+        }
       }
     }
     return coverage;
@@ -319,6 +358,105 @@ export default function BoxesPage() {
     setActionLocation(null);
   };
 
+  const locationFromPoint = (clientX: number, clientY: number): SlotLocation | null => {
+    const element = document.elementFromPoint(clientX, clientY);
+    const slotElement = element instanceof Element
+      ? element.closest<HTMLElement>("[data-box-slot]")
+      : null;
+    if (!slotElement) {
+      return null;
+    }
+    const slotIndex = Number(slotElement.dataset.slotIndex);
+    if (!Number.isInteger(slotIndex) || slotIndex < 0) {
+      return null;
+    }
+    if (slotElement.dataset.slotKind === "party") {
+      return { kind: "party", slotIndex };
+    }
+    if (slotElement.dataset.slotKind === "box") {
+      const boxIndex = Number(slotElement.dataset.boxIndex);
+      if (Number.isInteger(boxIndex) && boxIndex >= 0) {
+        return { kind: "box", boxIndex, slotIndex };
+      }
+    }
+    return null;
+  };
+
+  const clearPointerDrag = (event?: ReactPointerEvent<HTMLButtonElement>) => {
+    const gesture = pointerDragRef.current;
+    if (gesture && event?.currentTarget.hasPointerCapture(gesture.pointerId)) {
+      event.currentTarget.releasePointerCapture(gesture.pointerId);
+    }
+    pointerDragRef.current = null;
+    setDragSource(null);
+    setDragTarget(null);
+  };
+
+  const handlePointerDown = (event: ReactPointerEvent<HTMLButtonElement>, location: SlotLocation) => {
+    // A new pointer sequence means any suppression from a prior completed drag
+    // is no longer needed (some browsers do not synthesize a click after a drag).
+    suppressClickRef.current = false;
+    if (!event.isPrimary) {
+      return;
+    }
+    if (event.pointerType === "mouse") {
+      return;
+    }
+    pointerDragRef.current = {
+      source: location,
+      pointerId: event.pointerId,
+      startX: event.clientX,
+      startY: event.clientY,
+      active: false,
+    };
+    event.currentTarget.setPointerCapture(event.pointerId);
+  };
+
+  const handlePointerMove = (event: ReactPointerEvent<HTMLButtonElement>) => {
+    const gesture = pointerDragRef.current;
+    if (!gesture || gesture.pointerId !== event.pointerId) {
+      return;
+    }
+    if (!gesture.active) {
+      const distance = Math.hypot(event.clientX - gesture.startX, event.clientY - gesture.startY);
+      if (distance < 8) {
+        return;
+      }
+      gesture.active = true;
+      setDragSource(gesture.source);
+    }
+    event.preventDefault();
+    const target = locationFromPoint(event.clientX, event.clientY);
+    setDragTarget(target && !locationsEqual(gesture.source, target) ? target : null);
+  };
+
+  const handlePointerUp = (event: ReactPointerEvent<HTMLButtonElement>) => {
+    const gesture = pointerDragRef.current;
+    if (!gesture || gesture.pointerId !== event.pointerId) {
+      return;
+    }
+    if (gesture.active) {
+      event.preventDefault();
+      const target = locationFromPoint(event.clientX, event.clientY);
+      if (target) {
+        swapSlots(gesture.source, target);
+      }
+      suppressClickRef.current = true;
+    }
+    clearPointerDrag(event);
+  };
+
+  const handlePointerCancel = (event: ReactPointerEvent<HTMLButtonElement>) => {
+    const gesture = pointerDragRef.current;
+    if (!gesture || gesture.pointerId !== event.pointerId) {
+      return;
+    }
+    // Pointer cancellation does not complete a drag and normally does not
+    // synthesize a click, so do not leave the next legitimate tap suppressed.
+    suppressClickRef.current = false;
+    clearPointerDrag(event);
+  };
+
   // Fully releases the owned Pokémon: removes it from whichever slot holds it (if any) and
   // deletes its profile entirely.
   const releaseProfileById = (profileId: string) => {
@@ -340,6 +478,43 @@ export default function BoxesPage() {
       return next;
     });
     setActionLocation(null);
+  };
+
+  // Fully releases every owned Pokémon currently stored in a box. Profile ids are
+  // de-duplicated so a malformed box cannot cause the same profile to be counted twice.
+  const releaseAllFromBox = (boxIndex: number) => {
+    const box = boxesData[boxIndex];
+    if (!box) return;
+    const profileIds = new Set(box.slots.filter((slot): slot is string => Boolean(slot)));
+    if (profileIds.size === 0) return;
+
+    if (!window.confirm(`Release all ${profileIds.size} Pokémon from ${box.name}? This permanently deletes their recorded stats.`)) {
+      return;
+    }
+
+    setBoxesData((current) =>
+      current.map((currentBox) => ({
+        ...currentBox,
+        slots: currentBox.slots.map((slot) => (slot && profileIds.has(slot) ? null : slot)),
+      })),
+    );
+    setPartyData((current) => current.map((slot) => (slot && profileIds.has(slot) ? null : slot)));
+    setCaughtPokemonMap((current) => {
+      const next: CaughtPokemonMap = {};
+      for (const [species, profiles] of Object.entries(current)) {
+        const filtered = profiles.filter((profile) => !profileIds.has(profile.id));
+        if (filtered.length > 0) {
+          next[species] = filtered;
+        }
+      }
+      return next;
+    });
+    if (actionLocation) {
+      const actionProfileId = getSlotProfileId(actionLocation);
+      if (actionProfileId && profileIds.has(actionProfileId)) {
+        setActionLocation(null);
+      }
+    }
   };
 
   const handleNewProfileSaved = (profile: CaughtPokemonProfile) => {
@@ -371,11 +546,85 @@ export default function BoxesPage() {
     setEditingProfile(null);
   };
 
+  const openImport = (boxIndex: number) => {
+    setImportBoxIndex(boxIndex);
+    setImportText("");
+    setImportRows([]);
+    setImportErrors([]);
+    setImportProcessed(false);
+    setImportPickerRowIndex(null);
+    setImportPickerSearch("");
+  };
+
+  const closeImport = () => {
+    setImportBoxIndex(null);
+    setImportText("");
+    setImportRows([]);
+    setImportErrors([]);
+    setImportProcessed(false);
+    setImportPickerRowIndex(null);
+    setImportPickerSearch("");
+  };
+
+  const processImportText = () => {
+    const result = parseBoxImport(importText, entries, dataset ?? { pokemon: {}, moves: {}, abilities: {}, items: {} }, caughtSpeciesMap, allProfiles);
+    setImportRows(result.rows);
+    setImportErrors(result.errors);
+    setImportProcessed(true);
+  };
+
+  const updateImportRow = (index: number, update: Partial<BoxImportRow>) => {
+    setImportRows((current) => current.map((row) => (row.index === index ? { ...row, ...update } : row)));
+  };
+
+  const selectImportSpecies = (rowIndex: number, speciesId: string | null) => {
+    const selectedRow = importRows.find((row) => row.index === rowIndex);
+    if (!selectedRow || !dataset) return;
+    const rebound = rebindBoxImportRow(selectedRow, speciesId, dataset, caughtSpeciesMap, allProfiles);
+    setImportRows((current) => current.map((row) => (row.index === rowIndex ? rebound : row)));
+    setImportPickerRowIndex(null);
+    setImportPickerSearch("");
+  };
+
+  const confirmImport = () => {
+    if (importBoxIndex === null) return;
+    const selected = importRows.filter((row) => row.include && row.errors.length === 0 && row.speciesId);
+    if (selected.length === 0) {
+      setImportErrors(["Select at least one valid Pokémon to import."]);
+      return;
+    }
+    if (selected.length > importAvailableSlots) {
+      setImportErrors([`This box has ${importAvailableSlots} empty slot${importAvailableSlots === 1 ? "" : "s"}, but ${selected.length} Pokémon are selected.`]);
+      return;
+    }
+    const profiles = selected.map(profileFromImport);
+    const nextCaughtPokemon: CaughtPokemonMap = { ...caughtPokemonMap };
+    for (const profile of profiles) {
+      nextCaughtPokemon[profile.currentSpecies] = [...(nextCaughtPokemon[profile.currentSpecies] ?? []), profile];
+    }
+    const nextCaughtSpecies = { ...caughtSpeciesMap };
+    selected.forEach((row) => {
+      if (row.markCaught && row.speciesId) nextCaughtSpecies[row.speciesId] = true;
+    });
+    const nextSlots = [...boxesData[importBoxIndex].slots];
+    let profileIndex = 0;
+    for (let slotIndex = 0; slotIndex < nextSlots.length && profileIndex < profiles.length; slotIndex += 1) {
+      if (nextSlots[slotIndex] === null) {
+        nextSlots[slotIndex] = profiles[profileIndex].id;
+        profileIndex += 1;
+      }
+    }
+    const nextBoxes = boxesData.map((box, index) => index === importBoxIndex ? { ...box, slots: nextSlots } : box);
+    setCaughtPokemonMap(nextCaughtPokemon);
+    setCaughtSpeciesMap(nextCaughtSpecies);
+    setBoxesData(nextBoxes);
+    closeImport();
+  };
+
   if (isLoading) {
     return (
       <main className="app-shell">
         <section className="card">
-          <h1>Pokedex Boxes</h1>
           <p>Loading Pokedex and Unbound details...</p>
         </section>
       </main>
@@ -386,7 +635,6 @@ export default function BoxesPage() {
     return (
       <main className="app-shell">
         <section className="card">
-          <h1>Pokedex Boxes</h1>
           <p className="error-text">{error}</p>
           <button type="button" onClick={() => window.location.reload()}>
             Retry
@@ -412,10 +660,18 @@ export default function BoxesPage() {
     const profileId = getSlotProfileId(location);
     const profile = profileId ? findProfileById(caughtPokemonMap, profileId) : null;
     const shapeClass = shape === "circle" ? "box-slot-circle" : "";
-    const isDragOverTarget = Boolean(dragSource) && !locationsEqual(dragSource as SlotLocation, location);
+    const isDragOverTarget = Boolean(dragTarget) && locationsEqual(dragTarget as SlotLocation, location);
     const commonDragProps = {
       onDragOver: (event: DragEvent) => {
-        if (dragSource) event.preventDefault();
+        if (dragSource) {
+          event.preventDefault();
+          setDragTarget(location);
+        }
+      },
+      onDragEnter: () => {
+        if (dragSource) {
+          setDragTarget(location);
+        }
       },
       onDrop: (event: DragEvent) => {
         event.preventDefault();
@@ -423,6 +679,7 @@ export default function BoxesPage() {
           swapSlots(dragSource, location);
         }
         setDragSource(null);
+        setDragTarget(null);
       },
     };
     if (!profile) {
@@ -432,6 +689,10 @@ export default function BoxesPage() {
           type="button"
           className={`box-slot box-slot-empty ${shapeClass} ${isDragOverTarget ? "box-slot-drop-target" : ""}`}
           onClick={() => setPickerLocation(location)}
+          data-box-slot="true"
+          data-slot-kind={location.kind}
+          data-box-index={location.kind === "box" ? location.boxIndex : undefined}
+          data-slot-index={location.slotIndex}
           {...commonDragProps}
         >
           <span className="box-slot-plus">+</span>
@@ -439,20 +700,40 @@ export default function BoxesPage() {
       );
     }
     const spriteUrl = dataset?.pokemon[profile.currentSpecies]?.spriteUrl ?? "";
-    const displayName = displayNameFor(profile.currentSpecies);
+    const speciesName = displayNameFor(profile.currentSpecies);
+    const displayName = profile.nickname?.trim() || speciesName;
     return (
       <button
         key={key}
         type="button"
         draggable
         className={`box-slot box-slot-filled ${shapeClass} ${isDragOverTarget ? "box-slot-drop-target" : ""}`}
-        title={`${displayName} (Lv. ${profile.level}) — drag to move`}
-        onClick={() => setActionLocation(location)}
+        title={`${displayName}${displayName !== speciesName ? ` (${speciesName})` : ""} (Lv. ${profile.level}) — drag to move`}
+        onClick={() => {
+          if (suppressClickRef.current) {
+            suppressClickRef.current = false;
+            return;
+          }
+          setActionLocation(location);
+        }}
+        onPointerDown={(event) => handlePointerDown(event, location)}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerUp}
+        onPointerCancel={handlePointerCancel}
+        onLostPointerCapture={handlePointerCancel}
+        data-box-slot="true"
+        data-slot-kind={location.kind}
+        data-box-index={location.kind === "box" ? location.boxIndex : undefined}
+        data-slot-index={location.slotIndex}
         onDragStart={(event) => {
           setDragSource(location);
+          setDragTarget(null);
           event.dataTransfer.effectAllowed = "move";
         }}
-        onDragEnd={() => setDragSource(null)}
+        onDragEnd={() => {
+          setDragSource(null);
+          setDragTarget(null);
+        }}
         {...commonDragProps}
       >
         <SpriteImage speciesKey={profile.currentSpecies} fallbackUrl={spriteUrl} alt={displayName} className="box-sprite" />
@@ -464,17 +745,9 @@ export default function BoxesPage() {
     <main className="app-shell">
       {popoverEl}
       <section className="card">
-        <header className="header">
-          <div className="header-top-row">
-            <div>
-              <h1>Pokedex Boxes</h1>
-              <p className="subtitle">Store and organize your caught Pokemon, PC-box style.</p>
-            </div>
-            <CloudSyncControls cloudSync={cloudSync} />
-          </div>
-        </header>
-
-        <Link to="/" className="back-link">← Back to Pokédex</Link>
+        <div className="page-back-nav">
+          <Link to="/" className="back-link">← Back to Pokédex</Link>
+        </div>
 
         <section className="progress-card">
           <strong>Boxed: {totalBoxed}/{totalCaught} owned Pokemon</strong>
@@ -501,7 +774,7 @@ export default function BoxesPage() {
                   {renderSlot(location, `party-${slotIndex}`, "circle")}
                   {!teamOverviewCollapsed && profile ? (
                     <div className="team-roster-card team-roster-card-vertical">
-                      <div className="team-roster-name">{displayName} <span className="muted">Lv. {profile.level}</span></div>
+                      <div className="team-roster-name">{profile.nickname?.trim() || displayName} {profile.nickname?.trim() ? <span className="muted">({displayName})</span> : null} <span className="muted">Lv. {profile.level}</span>{profile.shiny ? <span className="shiny-badge">★</span> : null}</div>
                       <div className="pokemon-row-types">
                         {(details?.types ?? []).map((type) => (
                           <span key={type} className="type-chip" style={{ background: getTypeColor(type), color: getTypeTextColor(type) }}>
@@ -545,8 +818,8 @@ export default function BoxesPage() {
           </div>
 
           {!teamOverviewCollapsed && partyMembers.length > 0 ? (
-            <>
-              <div className="team-totals-card">
+            <div className="team-overview-summaries">
+              <div className="team-summary-card team-totals-card">
                 <h3>Team Stat Totals</h3>
                 <div className="stats-grid">
                   {(() => {
@@ -579,14 +852,21 @@ export default function BoxesPage() {
                 </div>
               </div>
 
-              <div className="team-type-coverage">
+              <div className="team-summary-card team-type-coverage">
                 <h3>Team Type Coverage</h3>
-                <p className="muted">How many of your party members are weak to, resist, or are immune to each attacking type.</p>
+                <p className="muted">Effective defensive coverage by attacking type. 4× weaknesses and ¼× resistances count four points; immunities count two.</p>
                 <div className="type-coverage-grid">
                   {ALL_TYPES.map((type) => {
                     const coverage = teamTypeCoverage[type];
+                    const isNeutral = coverage.weakPoints === 0 && coverage.resistPoints === 0;
+                    const isWeak = coverage.weakPoints > coverage.resistPoints;
+                    const rowState = isNeutral ? "neutral" : isWeak ? "weak" : "covered";
                     return (
-                      <div key={type} className="type-coverage-row">
+                      <div
+                        key={type}
+                        className={`type-coverage-row type-coverage-row-${rowState}`}
+                        aria-label={`${getDisplayToken(type)} ${rowState === "weak" ? "vulnerable" : rowState === "covered" ? "covered" : "neutral"}`}
+                      >
                         <span className="type-chip" style={{ background: getTypeColor(type), color: getTypeTextColor(type) }}>
                           {getDisplayToken(type)}
                         </span>
@@ -601,7 +881,7 @@ export default function BoxesPage() {
                   })}
                 </div>
               </div>
-            </>
+            </div>
           ) : null}
         </section>
 
@@ -612,14 +892,14 @@ export default function BoxesPage() {
             <div className="unassigned-list">
               {unassignedProfiles.map((profile) => {
                 const spriteUrl = dataset?.pokemon[profile.currentSpecies]?.spriteUrl ?? "";
-                const displayName = displayNameFor(profile.currentSpecies);
+                const displayName = profile.nickname?.trim() || displayNameFor(profile.currentSpecies);
                 return (
                   <div key={profile.id} className="unassigned-item">
                     <SpriteImage speciesKey={profile.currentSpecies} fallbackUrl={spriteUrl} alt={displayName} className="box-sprite" />
-                    <span className="box-picker-item-name">{displayName}</span>
+                    <span className="box-picker-item-name">{displayName}{profile.shiny ? " ★" : ""}</span>
                     <span className="box-picker-item-level">Lv. {profile.level}</span>
                     <button type="button" className="status-pill" onClick={() => setEditingProfile(profile)}>
-                      Edit Stats
+                      Edit / Evolve
                     </button>
                     <button type="button" className="status-pill btn-danger" onClick={() => releaseProfileById(profile.id)}>
                       Release
@@ -637,36 +917,50 @@ export default function BoxesPage() {
             return (
               <div key={boxIndex} className="box-card">
                 <div className="box-card-header">
-                  {renamingBoxIndex === boxIndex ? (
-                    <input
-                      type="text"
-                      className="box-name-input"
-                      value={boxNameDraft}
-                      autoFocus
-                      onChange={(event) => setBoxNameDraft(event.target.value)}
-                      onBlur={() => commitRename(boxIndex)}
-                      onKeyDown={(event) => {
-                        if (event.key === "Enter") {
-                          commitRename(boxIndex);
-                        } else if (event.key === "Escape") {
-                          setRenamingBoxIndex(null);
-                        }
-                      }}
-                    />
-                  ) : (
-                    <button type="button" className="box-name-btn" onClick={() => startRenaming(boxIndex)}>
-                      {box.name}
-                    </button>
-                  )}
-                  {isEmpty && boxesData.length > 1 && (
-                    <button
-                      type="button"
-                      className="box-toolbar-btn box-toolbar-btn-danger box-remove-btn"
-                      onClick={() => removeEmptyBox(boxIndex)}
-                    >
-                      Remove
-                    </button>
-                  )}
+                  <div className="box-card-title-row">
+                    {renamingBoxIndex === boxIndex ? (
+                      <input
+                        type="text"
+                        className="box-name-input"
+                        value={boxNameDraft}
+                        autoFocus
+                        onChange={(event) => setBoxNameDraft(event.target.value)}
+                        onBlur={() => commitRename(boxIndex)}
+                        onKeyDown={(event) => {
+                          if (event.key === "Enter") {
+                            commitRename(boxIndex);
+                          } else if (event.key === "Escape") {
+                            setRenamingBoxIndex(null);
+                          }
+                        }}
+                      />
+                    ) : (
+                      <button type="button" className="box-name-btn" onClick={() => startRenaming(boxIndex)}>
+                        {box.name}
+                      </button>
+                    )}
+                  </div>
+                  <div className="box-card-actions">
+                    <button type="button" className="box-toolbar-btn" onClick={() => openImport(boxIndex)}>Import</button>
+                    {!isEmpty && (
+                      <button
+                        type="button"
+                        className="box-toolbar-btn box-toolbar-btn-danger box-release-all-btn"
+                        onClick={() => releaseAllFromBox(boxIndex)}
+                      >
+                        Release All
+                      </button>
+                    )}
+                    {isEmpty && boxesData.length > 1 && (
+                      <button
+                        type="button"
+                        className="box-toolbar-btn box-toolbar-btn-danger box-remove-btn"
+                        onClick={() => removeEmptyBox(boxIndex)}
+                      >
+                        Remove
+                      </button>
+                    )}
+                  </div>
                 </div>
                 <div className="box-grid" style={{ gridTemplateColumns: `repeat(${BOX_COLUMNS}, 1fr)` }}>
                   {Array.from({ length: BOX_SLOT_COUNT }, (_, slotIndex) =>
@@ -681,6 +975,118 @@ export default function BoxesPage() {
           </button>
         </section>
       </section>
+
+      {importBoxIndex !== null ? (
+        <div className="modal-backdrop" role="dialog" aria-modal="true" onClick={closeImport}>
+          <section className="modal-card box-import-modal" onClick={(event) => event.stopPropagation()}>
+            <h3>Import into {boxesData[importBoxIndex]?.name ?? "Box"}</h3>
+            <p className="muted">Paste one or more exported Pokémon. Nothing is saved until you review and confirm.</p>
+            <textarea
+              className="box-import-textarea"
+              value={importText}
+              onChange={(event) => {
+                setImportText(event.target.value);
+                setImportProcessed(false);
+                setImportRows([]);
+                setImportErrors([]);
+              }}
+              placeholder={'Vanillite (Vanillite) (F)\nAbility: Ice Body\nLevel: 9\n...'}
+              rows={10}
+            />
+            <div className="modal-actions">
+              <button type="button" className="btn-primary" onClick={processImportText} disabled={!importText.trim()}>Review import</button>
+              <button type="button" className="status-pill" onClick={closeImport}>Cancel</button>
+            </div>
+
+            {importProcessed ? (
+              <div className="box-import-review">
+                <div className="box-import-summary">
+                  <strong>{importIncludedRows.length} selected</strong>
+                  <span className="muted">{importAvailableSlots} empty slot{importAvailableSlots === 1 ? "" : "s"} available</span>
+                </div>
+                {importErrors.map((message) => <p key={message} className="error-text">{message}</p>)}
+                {importRows.length === 0 ? <p className="muted">No Pokémon were recognized.</p> : null}
+                <div className="box-import-list">
+                  {importRows.map((row) => {
+                    const speciesName = row.speciesId ? displayNameFor(row.speciesId) : row.speciesLabel;
+                    const displayName = row.nickname && row.nickname !== row.speciesLabel ? `${row.nickname} (${speciesName})` : speciesName;
+                    const canInclude = row.errors.length === 0;
+                    return (
+                      <div key={`${row.index}-${row.speciesLabel}`} className={`box-import-row ${row.errors.length > 0 ? "box-import-row-invalid" : ""}`}>
+                        <div className="box-import-row-main">
+                          {row.speciesId ? <SpriteImage speciesKey={row.speciesId} fallbackUrl={dataset?.pokemon[row.speciesId]?.spriteUrl ?? ""} alt={speciesName} className="box-sprite" /> : null}
+                          <div className="box-import-row-details">
+                            <strong>{displayName}</strong>
+                            <span className="muted">Lv. {row.level} · {row.nature}{row.gender ? ` · ${row.gender === "M" ? "Male" : "Female"}` : ""}{row.shiny ? " · Shiny" : ""}</span>
+                            <span className="muted">{row.moveLabels.length > 0 ? row.moveLabels.join(", ") : "No moves"}</span>
+                            {row.errors.map((message) => <span key={message} className="error-text">{message}</span>)}
+                            {row.warnings.map((message) => <span key={message} className="warning-text">{message}</span>)}
+                            {row.speciesId ? <span className="box-import-match">Matched to: {speciesName}</span> : null}
+                            {importPickerRowIndex === row.index ? (
+                              <div className="box-import-species-picker">
+                                <input
+                                  type="search"
+                                  className="box-import-species-search"
+                                  value={importPickerSearch}
+                                  onChange={(event) => setImportPickerSearch(event.target.value)}
+                                  placeholder="Search Pokédex…"
+                                  autoFocus
+                                />
+                                <div className="box-import-species-options">
+                                  {importSpeciesOptions.slice(0, 60).map((entry) => (
+                                    <button key={entry.id} type="button" className="box-import-species-option" onClick={() => selectImportSpecies(row.index, entry.id)}>
+                                      {entry.displayName}
+                                    </button>
+                                  ))}
+                                  {importSpeciesOptions.length === 0 ? <span className="muted">No matching Pokémon.</span> : null}
+                                </div>
+                                <button type="button" className="status-pill" onClick={() => selectImportSpecies(row.index, null)}>Clear selection</button>
+                              </div>
+                            ) : (
+                              <button type="button" className="box-import-select-btn" onClick={() => { setImportPickerRowIndex(row.index); setImportPickerSearch(row.speciesLabel.split("-")[0]); }}>
+                                {row.speciesId ? "Change selection" : "Select Pokémon"}
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                        <div className="box-import-row-controls">
+                          <label className="box-import-include">
+                            <input
+                              type="checkbox"
+                              checked={row.include}
+                              disabled={!canInclude || (!row.alreadyCaught && !row.markCaught)}
+                              onChange={(event) => updateImportRow(row.index, { include: event.target.checked })}
+                            />
+                            Include
+                          </label>
+                          {!row.alreadyCaught && canInclude ? (
+                            <label className="box-import-catch">
+                              <input
+                                type="checkbox"
+                                checked={row.markCaught}
+                                onChange={(event) => updateImportRow(row.index, { markCaught: event.target.checked, include: event.target.checked })}
+                              />
+                              Mark as caught
+                            </label>
+                          ) : (
+                            <span className="status-pill status-pill-success">{row.alreadyCaught ? "Caught" : "Needs review"}</span>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+                <div className="modal-actions">
+                  <button type="button" className="btn-primary" onClick={confirmImport} disabled={importIncludedRows.length === 0 || importIncludedRows.length > importAvailableSlots}>
+                    Import {importIncludedRows.length} Pokémon
+                  </button>
+                  <button type="button" className="status-pill" onClick={closeImport}>Cancel</button>
+                </div>
+              </div>
+            ) : null}
+          </section>
+        </div>
+      ) : null}
 
       {pickerLocation && (
         <div className="modal-backdrop" role="dialog" aria-modal="true" onClick={() => setPickerLocation(null)}>
@@ -701,7 +1107,7 @@ export default function BoxesPage() {
                 <div className="box-picker-list">
                   {availableProfiles.map((profile) => {
                     const spriteUrl = dataset?.pokemon[profile.currentSpecies]?.spriteUrl ?? "";
-                    const displayName = displayNameFor(profile.currentSpecies);
+                    const displayName = profile.nickname?.trim() || displayNameFor(profile.currentSpecies);
                     return (
                       <button
                         key={profile.id}
@@ -710,7 +1116,7 @@ export default function BoxesPage() {
                         onClick={() => assignProfileToSlot(pickerLocation, profile.id)}
                       >
                         <SpriteImage speciesKey={profile.currentSpecies} fallbackUrl={spriteUrl} alt={displayName} className="box-sprite" />
-                        <span className="box-picker-item-name">{displayName}</span>
+                        <span className="box-picker-item-name">{displayName}{profile.shiny ? " ★" : ""}</span>
                         <span className="box-picker-item-level">Lv. {profile.level}</span>
                       </button>
                     );
@@ -782,8 +1188,8 @@ export default function BoxesPage() {
                 className="pokemon-info-sprite"
               />
               <div>
-                <h3>{displayNameFor(actionProfile.currentSpecies)}</h3>
-                <p className="muted">Level {actionProfile.level} · {formatNatureLabel(actionProfile.nature)} Nature</p>
+                <h3>{actionProfile.nickname?.trim() || displayNameFor(actionProfile.currentSpecies)}{actionProfile.shiny ? " ★" : ""}</h3>
+                <p className="muted">{actionProfile.nickname?.trim() ? `${displayNameFor(actionProfile.currentSpecies)} · ` : ""}Level {actionProfile.level} · {formatNatureLabel(actionProfile.nature)} Nature{actionProfile.gender ? ` · ${actionProfile.gender === "M" ? "Male" : "Female"}` : ""}</p>
                 <div className="pokemon-row-types">
                   {(actionProfileDetails?.types ?? []).map((type) => (
                     <span key={type} className="type-chip" style={{ background: getTypeColor(type), color: getTypeTextColor(type) }}>
@@ -801,6 +1207,10 @@ export default function BoxesPage() {
             <div className="header-pill-row">
               <span className="header-pill-group-label">Held Item:</span>
               <span className="tag-button">{actionProfile.item ? (dataset?.items[actionProfile.item]?.name ?? getDisplayToken(actionProfile.item)) : "—"}</span>
+            </div>
+            <div className="header-pill-row">
+              <span className="header-pill-group-label">Happiness:</span>
+              <span className="tag-button">{actionProfile.happiness ?? "—"}</span>
             </div>
 
             <h4 className="pokemon-info-subheading">Stats</h4>
@@ -868,7 +1278,7 @@ export default function BoxesPage() {
                   setActionLocation(null);
                 }}
               >
-                Edit Stats
+                Edit / Evolve
               </button>
               <button
                 type="button"

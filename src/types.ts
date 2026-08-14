@@ -112,6 +112,11 @@ export type CaughtPokemonProfile = {
   id: string;
   originalSpecies: string;
   currentSpecies: string;
+  /** Optional metadata imported from save/export tools. */
+  nickname?: string;
+  gender?: "M" | "F";
+  shiny?: boolean;
+  happiness?: number;
   level: number;
   nature: string;
   ability: string;
@@ -143,4 +148,3 @@ export type BoxesData = PokemonBox[];
 
 /** The 6 Pokémon a player carries with them (not stored in any box). */
 export type PartyData = BoxSlot[];
-

@@ -12,7 +12,14 @@ import type {
   UnboundDataset,
 } from "./types";
 
-const DATASET_CACHE_KEY = "https://unbound-tracker.local/cache/unbound-dataset-v12.json";
+const DATASET_CACHE_KEY = "https://unbound-tracker.local/cache/unbound-dataset-v15.json";
+
+// The upstream source annotates these species with Vital Spirit as the intended
+// ability, but currently exposes Insomnia in the parsed field.
+const ABILITY_OVERRIDES: Record<string, string[]> = {
+  SPECIES_MANKEY: ["ABILITY_VITALSPIRIT", "ABILITY_ANGERPOINT", "ABILITY_DEFIANT"],
+  SPECIES_PRIMEAPE: ["ABILITY_VITALSPIRIT", "ABILITY_ANGERPOINT", "ABILITY_DEFIANT"],
+};
 
 const SOURCES = {
   baseStats:
@@ -146,6 +153,12 @@ function parseBaseStats(text: string): Record<string, Omit<PokemonDetails, "spec
       heldItems: [item1, item2].filter((item, index, array) => item !== "" && item !== "ITEM_NONE" && array.indexOf(item) === index),
     };
   }
+
+  Object.entries(ABILITY_OVERRIDES).forEach(([speciesKey, abilities]) => {
+    if (results[speciesKey]) {
+      results[speciesKey].abilities = [...abilities];
+    }
+  });
 
   return results;
 }
@@ -429,6 +442,17 @@ function parseAbilities(
       name: namesByCanonicalKey[canonical] ?? formatConstantToken(key),
       description: descriptionsByCanonicalKey[canonical] ?? "",
     };
+  }
+
+  const insomnia = result.ABILITY_INSOMNIA;
+  if (!result.ABILITY_VITALSPIRIT) {
+    result.ABILITY_VITALSPIRIT = {
+      key: "ABILITY_VITALSPIRIT",
+      name: "Vital Spirit",
+      description: insomnia?.description ?? "",
+    };
+  } else {
+    result.ABILITY_VITALSPIRIT.name = "Vital Spirit";
   }
 
   return result;

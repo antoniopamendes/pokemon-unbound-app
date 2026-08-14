@@ -96,6 +96,30 @@ export function findAncestorPath(root: EvoTreeNode | null, target: string): stri
   return search(root, []) ?? [target];
 }
 
+// Alternate battle forms are represented in the same tree as evolutions, but
+// they are not permanent species evolutions for an owned profile.
+const ALTERNATE_FORM_EVO_METHODS = new Set([
+  "EVO_MEGA",
+  "EVO_GIGANTAMAX",
+  "EVO_PRIMAL",
+  "EVO_ULTRA_BURST",
+]);
+
+/** Returns the permanent, direct evolution targets for a species in its tree. */
+export function findDirectEvolutions(root: EvoTreeNode | null, target: string): EvoTreeNode[] {
+  if (!root) return [];
+  if (root.species === target) {
+    return root.children.filter((child) => !ALTERNATE_FORM_EVO_METHODS.has(child.method));
+  }
+  for (const child of root.children) {
+    const found = findDirectEvolutions(child, target);
+    if (found.length > 0 || child.species === target) {
+      return found;
+    }
+  }
+  return [];
+}
+
 export function toSlug(value: string): string {
   return value
     .toLowerCase()

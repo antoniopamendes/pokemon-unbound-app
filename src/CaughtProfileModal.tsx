@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { fetchPokemonMoveBuckets } from "./pokeApi";
 import { getDisplayToken } from "./unboundData";
 import { calculateCaughtPokemonStats, getNatureModifiers } from "./statCalculator";
@@ -7,6 +7,7 @@ import {
   NATURES,
   NATURE_BY_NAME,
   emptySpread,
+  findDirectEvolutions,
   formatNatureLabel,
   sumSpread,
   toSlug,
@@ -30,10 +31,18 @@ type Props = {
  * Boxes (creating a brand-new owned instance when placing a caught species into a slot).
  */
 export function CaughtProfileModal({ dataset, entries, originalSpecies, initialProfile, onSave, onClose }: Props) {
-  const currentSpecies = initialProfile?.currentSpecies || originalSpecies;
+  const initialSpecies = initialProfile?.currentSpecies || originalSpecies;
+  const [currentSpecies, setCurrentSpecies] = useState<string>(initialSpecies);
   const [level, setLevel] = useState<number>(initialProfile?.level ?? 1);
+  const [nickname, setNickname] = useState<string>(initialProfile?.nickname ?? "");
+  const [gender, setGender] = useState<"" | "M" | "F">(initialProfile?.gender ?? "");
+  const [shiny, setShiny] = useState<boolean>(initialProfile?.shiny ?? false);
+  const [happiness, setHappiness] = useState<number>(initialProfile?.happiness ?? 0);
   const [nature, setNature] = useState<string>(initialProfile?.nature ?? NATURES[0].name);
   const [ability, setAbility] = useState<string>(initialProfile?.ability ?? "");
+  const abilityDraftsRef = useRef<Record<string, string>>({
+    [initialSpecies]: initialProfile?.ability ?? "",
+  });
   const [item, setItem] = useState<string>(initialProfile?.item ?? "");
   const [evs, setEvs] = useState<StatSpread>(initialProfile?.evs ?? emptySpread(0));
   const [ivs, setIvs] = useState<StatSpread>(initialProfile?.ivs ?? emptySpread(31));
@@ -46,6 +55,34 @@ export function CaughtProfileModal({ dataset, entries, originalSpecies, initialP
   const [movesLoading, setMovesLoading] = useState(false);
 
   const details = dataset.pokemon[currentSpecies] ?? null;
+
+  const displaySpecies = (speciesKey: string): string =>
+    entries.find((entry) => entry.id === speciesKey)?.displayName
+      ?? getDisplayToken(speciesKey.replace("SPECIES_", ""));
+
+  const displayEvolutionMethod = (method: string, condition: string): string => {
+    if (method === "EVO_LEVEL") return `Lv. ${condition}`;
+    const label = method ? getDisplayToken(method) : "Evolution";
+    if (!condition || condition === "0" || condition === "TRUE" || condition === "FALSE") return label;
+    return `${label} (${getDisplayToken(condition)})`;
+  };
+
+  const initialDetails = dataset.pokemon[initialSpecies] ?? null;
+  const evolutionOptions = useMemo(
+    () => findDirectEvolutions(initialDetails?.evolutions ?? null, initialSpecies),
+    [initialDetails, initialSpecies],
+  );
+
+  const speciesOptions = useMemo(
+    () => [
+      { species: initialSpecies, label: displaySpecies(initialSpecies) },
+      ...evolutionOptions.map((option) => ({
+        species: option.species,
+        label: `Evolve to ${displaySpecies(option.species)} — ${displayEvolutionMethod(option.method, option.condition)}`,
+      })),
+    ].filter((option, index, options) => options.findIndex((candidate) => candidate.species === option.species) === index),
+    [initialSpecies, evolutionOptions, entries],
+  );
 
   useEffect(() => {
     let active = true;
@@ -102,8 +139,15 @@ export function CaughtProfileModal({ dataset, entries, originalSpecies, initialP
 
   const moveKeys = useMemo(() => {
     if (!details) return [] as string[];
-    return [...new Set([...details.levelUpMoves.map((learn) => learn.move), ...details.eggMoves, ...tmhmMoveKeys, ...tutorMoveKeys])];
-  }, [details, tmhmMoveKeys, tutorMoveKeys]);
+    return [...new Set([
+      ...details.levelUpMoves.map((learn) => learn.move),
+      ...details.eggMoves,
+      ...tmhmMoveKeys,
+      ...tutorMoveKeys,
+      ...(initialProfile?.moveset ?? []),
+      ...moveset.filter(Boolean),
+    ])];
+  }, [details, tmhmMoveKeys, tutorMoveKeys, initialProfile, moveset]);
 
   const moveOptions = useMemo(
     () =>
@@ -150,6 +194,23 @@ export function CaughtProfileModal({ dataset, entries, originalSpecies, initialP
     });
   };
 
+  const handleSpeciesChange = (nextSpecies: string) => {
+    abilityDraftsRef.current[currentSpecies] = ability;
+    const nextDetails = dataset.pokemon[nextSpecies];
+    const savedAbility = abilityDraftsRef.current[nextSpecies];
+    const savedAbilityIsValid = Boolean(savedAbility && nextDetails?.abilities.includes(savedAbility));
+    const currentAbilityIsValid = Boolean(ability && nextDetails?.abilities.includes(ability));
+    const resolvedAbility = savedAbilityIsValid
+      ? savedAbility!
+      : currentAbilityIsValid
+        ? ability
+        : nextDetails?.abilities[0] ?? "";
+    abilityDraftsRef.current[nextSpecies] = resolvedAbility;
+    setCurrentSpecies(nextSpecies);
+    setAbility(resolvedAbility);
+    setError("");
+  };
+
   const handleSave = () => {
     const trimmedMoves = moveset.filter(Boolean);
     if (level < 1 || level > 100) {
@@ -184,6 +245,10 @@ export function CaughtProfileModal({ dataset, entries, originalSpecies, initialP
       id: initialProfile?.id ?? `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
       originalSpecies: initialProfile?.originalSpecies ?? originalSpecies,
       currentSpecies,
+      nickname: nickname.trim() || undefined,
+      gender: gender || undefined,
+      shiny,
+      happiness: Math.max(0, Math.min(255, happiness)),
       level: Math.max(1, Math.min(100, level)),
       nature,
       ability,
@@ -205,12 +270,28 @@ export function CaughtProfileModal({ dataset, entries, originalSpecies, initialP
         <div className="caught-fields-grid">
           <label className="build-field">
             Current Pokemon
-            <input
-              type="text"
-              value={entries.find((entry) => entry.id === currentSpecies)?.displayName
-                ?? getDisplayToken(currentSpecies.replace("SPECIES_", ""))}
-              disabled
-            />
+            <select
+              value={currentSpecies}
+              onChange={(event) => handleSpeciesChange(event.target.value)}
+            >
+              {speciesOptions.map((option) => (
+                <option key={option.species} value={option.species}>{option.label}</option>
+              ))}
+            </select>
+          </label>
+
+          <label className="build-field">
+            Nickname
+            <input type="text" value={nickname} onChange={(event) => setNickname(event.target.value)} />
+          </label>
+
+          <label className="build-field">
+            Gender
+            <select value={gender} onChange={(event) => setGender(event.target.value as "" | "M" | "F")}>
+              <option value="">(unknown)</option>
+              <option value="M">Male</option>
+              <option value="F">Female</option>
+            </select>
           </label>
 
           <label className="build-field">
@@ -239,7 +320,14 @@ export function CaughtProfileModal({ dataset, entries, originalSpecies, initialP
 
           <label className="build-field">
             Ability
-            <select value={ability} onChange={(event) => setAbility(event.target.value)}>
+            <select
+              value={ability}
+              onChange={(event) => {
+                const nextAbility = event.target.value;
+                abilityDraftsRef.current[currentSpecies] = nextAbility;
+                setAbility(nextAbility);
+              }}
+            >
               <option value="">(none)</option>
               {abilityOptions.map((option) => (
                 <option key={option.key} value={option.key}>{option.label}</option>
@@ -255,6 +343,25 @@ export function CaughtProfileModal({ dataset, entries, originalSpecies, initialP
                 <option key={option.key} value={option.key}>{option.label}</option>
               ))}
             </select>
+          </label>
+
+          <label className="build-field">
+            Happiness
+            <input
+              type="number"
+              min={0}
+              max={255}
+              value={happiness}
+              onFocus={(event) => event.target.select()}
+              onChange={(event) => setHappiness(Math.max(0, Math.min(255, Number.parseInt(event.target.value, 10) || 0)))}
+            />
+          </label>
+
+          <label className="build-field" style={{ alignContent: "end" }}>
+            <span>Shiny</span>
+            <span>
+              <input type="checkbox" checked={shiny} onChange={(event) => setShiny(event.target.checked)} /> Yes
+            </span>
           </label>
         </div>
 

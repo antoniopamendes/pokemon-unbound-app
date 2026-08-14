@@ -86,6 +86,59 @@ export function getTypeMatchups(defendingTypes: string[]): Record<string, number
   return result;
 }
 
+/**
+ * Applies the unconditional, type-wide defensive effects of a selected ability.
+ *
+ * This intentionally leaves move-specific and battle-state effects (for example
+ * Wonder Guard, Bulletproof, weather abilities, and Mold Breaker interactions)
+ * out of the team overview because they cannot be represented by type alone.
+ */
+export function getAbilityAdjustedTypeMatchups(defendingTypes: string[], ability: string): Record<string, number> {
+  const result = getTypeMatchups(defendingTypes);
+  const setImmunity = (type: string) => {
+    result[type] = 0;
+  };
+  const multiply = (type: string, factor: number) => {
+    result[type] = (result[type] ?? 1) * factor;
+  };
+
+  switch (ability) {
+    case "ABILITY_LEVITATE":
+      setImmunity("TYPE_GROUND");
+      break;
+    case "ABILITY_FLASH_FIRE":
+      setImmunity("TYPE_FIRE");
+      break;
+    case "ABILITY_WATER_ABSORB":
+    case "ABILITY_STORM_DRAIN":
+      setImmunity("TYPE_WATER");
+      break;
+    case "ABILITY_DRY_SKIN":
+      setImmunity("TYPE_WATER");
+      multiply("TYPE_FIRE", 1.25);
+      break;
+    case "ABILITY_VOLT_ABSORB":
+    case "ABILITY_LIGHTNING_ROD":
+    case "ABILITY_MOTOR_DRIVE":
+      setImmunity("TYPE_ELECTRIC");
+      break;
+    case "ABILITY_SAP_SIPPER":
+      setImmunity("TYPE_GRASS");
+      break;
+    case "ABILITY_THICK_FAT":
+      multiply("TYPE_FIRE", 0.5);
+      multiply("TYPE_ICE", 0.5);
+      break;
+    case "ABILITY_HEATPROOF":
+      multiply("TYPE_FIRE", 0.5);
+      break;
+    default:
+      break;
+  }
+
+  return result;
+}
+
 export type TypeMatchupBuckets = {
   quadWeak: string[];
   weak: string[];

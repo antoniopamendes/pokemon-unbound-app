@@ -24,9 +24,7 @@ import {
   saveCaughtPokemonMap,
   saveCaughtSpeciesMap,
 } from "./storage";
-import { CloudSyncControls } from "./CloudSyncControls";
 import { getDisplayToken, getUnboundDataset } from "./unboundData";
-import { useCloudSync } from "./useCloudSync";
 import { getNatureModifiers } from "./statCalculator";
 import { getTypeColor, getTypeTextColor } from "./typeColors";
 import { speciesIdToSlug, slugToSpeciesId } from "./speciesSlug";
@@ -380,6 +378,36 @@ export function SpriteImage({
 // Evo methods that represent alternate battle forms rather than a true species evolution.
 const FORM_EVO_METHODS = new Set(["EVO_MEGA", "EVO_GIGANTAMAX", "EVO_PRIMAL", "EVO_ULTRA_BURST"]);
 
+type CaughtFilterMode = "all" | "caught" | "caught-evolutions";
+
+/** Return a species and its forward, regular evolutions from an evolution tree. */
+function collectForwardEvolutionSpecies(root: EvoTreeNode | null, species: string): Set<string> {
+  const result = new Set<string>();
+
+  const collectDescendants = (node: EvoTreeNode) => {
+    result.add(node.species);
+    node.children
+      .filter((child) => !FORM_EVO_METHODS.has(child.method))
+      .forEach(collectDescendants);
+  };
+
+  const findSpecies = (node: EvoTreeNode): boolean => {
+    if (node.species === species) {
+      collectDescendants(node);
+      return true;
+    }
+    return node.children
+      .filter((child) => !FORM_EVO_METHODS.has(child.method))
+      .some(findSpecies);
+  };
+
+  if (!root || !findSpecies(root)) {
+    result.add(species);
+  }
+
+  return result;
+}
+
 // ---- Evolution tree renderer ----
 function EvoTree({
   node,
@@ -509,7 +537,7 @@ function App() {
   };
   const [search, setSearch] = useState("");
   const [selectedTypes, setSelectedTypes] = useState<Set<string>>(new Set());
-  const [caughtOnly, setCaughtOnly] = useState(false);
+  const [caughtFilterMode, setCaughtFilterMode] = useState<CaughtFilterMode>("all");
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
   const [compactView, setCompactView] = useState<boolean>(() => localStorage.getItem("unbound-tracker-compact-view") === "1");
@@ -544,9 +572,6 @@ function App() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { show: popShow, move: popMove, hide: popHide, toggle: popToggle, popoverEl } = usePopover();
-  const cloudSync = useCloudSync();
-  const [accountMenuOpen, setAccountMenuOpen] = useState(false);
-  const [accountEmail, setAccountEmail] = useState("");
 
   useEffect(() => {
     const onLocalDataChanged = () => {
@@ -695,8 +720,34 @@ function App() {
     return counts;
   }, [caughtPokemonMap]);
 
-  const isSpeciesRegistered = (speciesId: string) =>
-    Boolean(caughtSpeciesMap[speciesId]) || (caughtCountBySpecies[speciesId] ?? 0) > 0;
+  const caughtSpeciesIds = useMemo(() => {
+    const ids = new Set<string>();
+    Object.entries(caughtSpeciesMap).forEach(([speciesId, isCaught]) => {
+      if (isCaught) {
+        ids.add(speciesId);
+      }
+    });
+    Object.entries(caughtCountBySpecies).forEach(([speciesId, count]) => {
+      if (count > 0) {
+        ids.add(speciesId);
+      }
+    });
+    return ids;
+  }, [caughtSpeciesMap, caughtCountBySpecies]);
+
+  const caughtAndEvolutionSpecies = useMemo(() => {
+    const ids = new Set(caughtSpeciesIds);
+    if (!dataset) {
+      return ids;
+    }
+    caughtSpeciesIds.forEach((speciesId) => {
+      const evolutionTree = dataset.pokemon[speciesId]?.evolutions ?? null;
+      collectForwardEvolutionSpecies(evolutionTree, speciesId).forEach((id) => ids.add(id));
+    });
+    return ids;
+  }, [caughtSpeciesIds, dataset]);
+
+  const isSpeciesRegistered = (speciesId: string) => caughtSpeciesIds.has(speciesId);
 
   const toggleCaughtSpecies = (speciesId: string) => {
     setCaughtSpeciesMap((current) => {
@@ -728,7 +779,10 @@ function App() {
         query.length === 0 ||
         entry.displayName.toLowerCase().includes(query);
 
-      const matchesCaught = !caughtOnly || isSpeciesRegistered(entry.id);
+      const matchesCaught =
+        caughtFilterMode === "all" ||
+        (caughtFilterMode === "caught" && caughtSpeciesIds.has(entry.id)) ||
+        (caughtFilterMode === "caught-evolutions" && caughtAndEvolutionSpecies.has(entry.id));
       
       const pokemonTypes = dataset?.pokemon[entry.id]?.types ?? [];
       const matchesType =
@@ -750,7 +804,18 @@ function App() {
 
       return matchesName && matchesCaught && matchesType && matchesBaseStat && matchesIndividualStats;
     });
-  }, [entries, search, caughtOnly, caughtCountBySpecies, selectedTypes, dataset, minBaseStat, maxBaseStat, statFilters]);
+  }, [
+    entries,
+    search,
+    caughtFilterMode,
+    caughtSpeciesIds,
+    caughtAndEvolutionSpecies,
+    selectedTypes,
+    dataset,
+    minBaseStat,
+    maxBaseStat,
+    statFilters,
+  ]);
 
   const [visibleCount, setVisibleCount] = useState(GRID_PAGE_SIZE);
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
@@ -784,7 +849,7 @@ function App() {
 
   const caughtCount = useMemo(
     () => entries.filter((entry) => isSpeciesRegistered(entry.id)).length,
-    [entries, caughtCountBySpecies],
+    [entries, caughtSpeciesIds],
   );
 
   const totalCount = entries.length;
@@ -817,6 +882,9 @@ function App() {
       return next;
     });
     closeProfileModal();
+    if (selectedSpecies && profile.currentSpecies !== selectedSpecies) {
+      goToSpecies(profile.currentSpecies);
+    }
   };
 
   const selectedDetails = useMemo(() => {
@@ -1084,7 +1152,6 @@ function App() {
     return (
       <main className="app-shell">
         <section className="card">
-          <h1>Pokemon Unbound Tracker</h1>
           <p>Loading Pokedex and Unbound details...</p>
         </section>
       </main>
@@ -1095,7 +1162,6 @@ function App() {
     return (
       <main className="app-shell">
         <section className="card">
-          <h1>Pokemon Unbound Tracker</h1>
           <p className="error-text">{error}</p>
           <button type="button" onClick={() => window.location.reload()}>
             Retry
@@ -1109,76 +1175,6 @@ function App() {
     <main className="app-shell">
       {popoverEl}
       <section className="card">
-        <header className="header">
-          <div className="header-top-row">
-            <div>
-              <h1>Pokemon Unbound Tracker</h1>
-              <p className="subtitle">Simple Pokedex companion with cached Unbound data.</p>
-            </div>
-            <div className="header-actions">
-              <Link to="/boxes" className="account-btn">Pokedex Boxes</Link>
-              {cloudSync.isCloudEnabled && (
-              <div className="account-widget">
-                {cloudSync.user ? (
-                  <div className="account-signed-in">
-                    <span className="account-email" title={cloudSync.user.email ?? ""}>
-                      {cloudSync.user.email}
-                    </span>
-                    <CloudSyncControls cloudSync={cloudSync} />
-                    <button type="button" className="account-btn" onClick={() => void cloudSync.signOut()}>
-                      Sign out
-                    </button>
-                  </div>
-                ) : (
-                  <div className="account-signed-out">
-                    <button
-                      type="button"
-                      className="account-btn account-btn-primary"
-                      onClick={() => setAccountMenuOpen((current) => !current)}
-                    >
-                      Sign in to sync
-                    </button>
-                    {accountMenuOpen && (
-                      <div className="account-popover">
-                        {cloudSync.magicLinkSent ? (
-                          <p className="account-hint">
-                            Check <strong>{accountEmail}</strong> for a magic sign-in link.
-                          </p>
-                        ) : (
-                          <form
-                            onSubmit={(event) => {
-                              event.preventDefault();
-                              if (accountEmail.trim()) {
-                                void cloudSync.signInWithEmail(accountEmail.trim());
-                              }
-                            }}
-                          >
-                            <label className="account-email-label">
-                              Email
-                              <input
-                                type="email"
-                                required
-                                value={accountEmail}
-                                onChange={(event) => setAccountEmail(event.target.value)}
-                                placeholder="you@example.com"
-                              />
-                            </label>
-                            <button type="submit" className="account-btn account-btn-primary">
-                              Send magic link
-                            </button>
-                          </form>
-                        )}
-                        {cloudSync.authError && <p className="account-error">{cloudSync.authError}</p>}
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-            )}
-            </div>
-          </div>
-        </header>
-
         {!selectedSpecies && (
           <>
         <section className="progress-card">
@@ -1199,15 +1195,33 @@ function App() {
                 placeholder="Pikachu..."
               />
             </label>
-            <button
-              className={`caught-toggle-btn ${caughtOnly ? "active" : ""}`}
-              onClick={() => setCaughtOnly(!caughtOnly)}
-            >
-              {caughtOnly ? "✓ " : ""}Show only caught
-            </button>
+            <div className="controls-scope-group">
+              <span className="controls-group-label">Pokédex scope</span>
+              <div className="caught-filter-control" role="group" aria-label="Pokédex scope">
+                {([
+                  ["all", "Show all"],
+                  ["caught", "Show only caught"],
+                  ["caught-evolutions", "Caught + evolutions"],
+                ] as const).map(([mode, label]) => (
+                  <button
+                    key={mode}
+                    type="button"
+                    className={`caught-toggle-btn ${caughtFilterMode === mode ? "active" : ""}`}
+                    onClick={() => setCaughtFilterMode(mode)}
+                    aria-pressed={caughtFilterMode === mode}
+                  >
+                    {caughtFilterMode === mode ? "✓ " : ""}{label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div className="controls-display-toolbar" role="group" aria-label="Display options">
+            <span className="controls-group-label">Display</span>
             <button
               type="button"
-              className="filters-toggle-btn"
+              className={`filters-toggle-btn ${showFilters ? "active" : ""}`}
               onClick={() => setShowFilters((current) => !current)}
               aria-expanded={showFilters}
             >
@@ -1420,7 +1434,9 @@ function App() {
 
         {selectedSpecies ? (
           <section className="details-panel details-page">
-            <Link to="/" className="back-link">← Back to Pokédex</Link>
+            <div className="page-back-nav">
+              <Link to="/" className="back-link">← Back to Pokédex</Link>
+            </div>
             {selectedDetails && selectedEntry ? (
               <>
                 <header className="details-header">
