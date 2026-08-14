@@ -5,3 +5,6 @@ dist
 .env
 .env.local
 *.tsbuildinfo
+
+# Local browser flow scripts
+flow*.mjs
