@@ -2,7 +2,10 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import type { Dispatch, SetStateAction } from "react";
 import { createPortal } from "react-dom";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { fetchImageObjectUrlWithPersistentCache } from "./httpCache";
+import {
+  fetchImageObjectUrlWithPersistentCache,
+  fetchTransparentFallbackImageObjectUrl,
+} from "./httpCache";
 import { fetchUnboundPokedex } from "./pokedex";
 import {
   fetchAbilityDescription,
@@ -330,16 +333,15 @@ function MovesTable({
 
 async function resolveSpriteObjectUrl(speciesKey: string, fallbackUrl: string): Promise<string> {
   const pokeApiUrl = await fetchPokemonSpriteUrl(speciesKey);
-  const primaryUrl = pokeApiUrl || fallbackUrl;
-  if (primaryUrl) {
+  if (pokeApiUrl) {
     try {
-      return await fetchImageObjectUrlWithPersistentCache(primaryUrl);
+      return await fetchImageObjectUrlWithPersistentCache(pokeApiUrl);
     } catch {
-      // Fallback below.
+      // Fall through to the Unbound sprite below.
     }
   }
-  if (fallbackUrl && fallbackUrl !== primaryUrl) {
-    return fetchImageObjectUrlWithPersistentCache(fallbackUrl);
+  if (fallbackUrl) {
+    return fetchTransparentFallbackImageObjectUrl(fallbackUrl);
   }
   return "";
 }

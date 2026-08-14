@@ -100,7 +100,9 @@ export async function fetchPokemonSpriteUrl(speciesKey: string): Promise<string>
   const candidates = speciesKeyToApiCandidates(speciesKey);
   const cacheKey = `https://unbound-tracker.local/pokeapi/sprite-url/${speciesKey}`;
   const cached = await readJsonFromPersistentCache<string>(cacheKey);
-  if (cached !== null) return cached;
+  // Empty values may have been written by older versions after a transient
+  // request failure. Treat them as misses so the URL can recover naturally.
+  if (cached) return cached;
 
   for (const name of candidates) {
     try {
@@ -116,14 +118,15 @@ export async function fetchPokemonSpriteUrl(speciesKey: string): Promise<string>
         data.sprites?.other?.["official-artwork"]?.front_default
         ?? data.sprites?.front_default
         ?? "";
-      await writeJsonToPersistentCache(cacheKey, spriteUrl);
-      return spriteUrl;
+      if (spriteUrl) {
+        await writeJsonToPersistentCache(cacheKey, spriteUrl);
+        return spriteUrl;
+      }
     } catch {
       // Try next candidate.
     }
   }
 
-  await writeJsonToPersistentCache(cacheKey, "");
   return "";
 }
 
