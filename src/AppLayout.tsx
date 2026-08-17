@@ -127,6 +127,9 @@ export default function AppLayout() {
         subtitle={isBoxes ? "Store and organize your caught Pokemon, PC-box style." : "Simple Pokedex companion with cached Unbound data."}
         cloudSync={cloudSync}
         topbarRef={topbarRef}
+        mobileNavOpen={mobileNavOpen}
+        mobileToggleRef={mobileToggleRef}
+        onMobileNavOpen={() => setMobileNavOpen(true)}
       />
       <AppSidebar
         collapsed={!sidebarExpanded}
@@ -141,17 +144,6 @@ export default function AppLayout() {
         onSidebarMouseLeave={handleSidebarMouseLeave}
         onSidebarFocusChange={handleSidebarFocusChange}
       />
-      <button
-        ref={mobileToggleRef}
-        type="button"
-        className="mobile-sidebar-toggle"
-        onClick={() => setMobileNavOpen(true)}
-        aria-expanded={mobileNavOpen}
-        aria-controls="app-navigation"
-        aria-label="Open navigation"
-      >
-        <span aria-hidden="true">▤</span>
-      </button>
       <div className="app-layout-content">
         <Outlet />
       </div>

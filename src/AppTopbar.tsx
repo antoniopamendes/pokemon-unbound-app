@@ -8,9 +8,20 @@ type AppTopbarProps = {
   subtitle: string;
   cloudSync: CloudSyncApi;
   topbarRef?: RefObject<HTMLElement>;
+  mobileNavOpen: boolean;
+  mobileToggleRef: RefObject<HTMLButtonElement>;
+  onMobileNavOpen: () => void;
 };
 
-export function AppTopbar({ title, subtitle, cloudSync, topbarRef }: AppTopbarProps) {
+export function AppTopbar({
+  title,
+  subtitle,
+  cloudSync,
+  topbarRef,
+  mobileNavOpen,
+  mobileToggleRef,
+  onMobileNavOpen,
+}: AppTopbarProps) {
   const [accountEmail, setAccountEmail] = useState("");
   const [signInOpen, setSignInOpen] = useState(false);
   const accountAreaRef = useRef<HTMLDivElement>(null);
@@ -58,6 +69,17 @@ export function AppTopbar({ title, subtitle, cloudSync, topbarRef }: AppTopbarPr
   return (
     <header ref={topbarRef} className="app-topbar">
       <div className="app-topbar-inner">
+        <button
+          ref={mobileToggleRef}
+          type="button"
+          className="mobile-sidebar-toggle"
+          onClick={onMobileNavOpen}
+          aria-expanded={mobileNavOpen}
+          aria-controls="app-navigation"
+          aria-label="Open navigation"
+        >
+          <span aria-hidden="true">▤</span>
+        </button>
         <div className="app-topbar-heading">
           <strong>{title}</strong>
           <span>{subtitle}</span>

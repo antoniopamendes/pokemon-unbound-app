@@ -3158,6 +3158,7 @@ input[type="number"]::-webkit-inner-spin-button {
   grid-template-rows: auto minmax(0, 1fr);
   align-items: stretch;
   min-height: 100dvh;
+  overflow-x: hidden;
 }
 
 .app-topbar {
@@ -3267,6 +3268,7 @@ input[type="number"]::-webkit-inner-spin-button {
   flex: 1 1 auto;
   min-height: 0;
   overflow-y: auto;
+  overflow-x: hidden;
   padding: 0.85rem 0.85rem 1rem;
 }
 
@@ -3443,7 +3445,7 @@ input[type="number"]::-webkit-inner-spin-button {
   }
 
   .app-topbar-heading {
-    flex-basis: min(100%, 240px);
+    flex: 1 1 0;
   }
 
   .app-topbar-account {
@@ -3503,13 +3505,10 @@ input[type="number"]::-webkit-inner-spin-button {
   }
 
   .mobile-sidebar-toggle {
-    position: fixed;
-    top: calc(var(--app-topbar-height, 64px) + 0.75rem);
-    left: 0.75rem;
-    z-index: 110;
     display: inline-flex;
     align-items: center;
     justify-content: center;
+    flex: 0 0 2.3rem;
     width: 2.3rem;
     height: 2.3rem;
     padding: 0;
@@ -3521,7 +3520,8 @@ input[type="number"]::-webkit-inner-spin-button {
   }
 
   .app-layout-mobile-nav-open .mobile-sidebar-toggle {
-    display: none;
+    visibility: hidden;
+    pointer-events: none;
   }
 
   .app-layout-content {
