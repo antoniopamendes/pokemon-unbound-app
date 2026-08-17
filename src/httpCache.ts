@@ -1,22 +1,143 @@
 const APP_HTTP_CACHE = "unbound-tracker-http-cache-v1";
+const RAW_GITHUB_RETRYABLE_STATUSES = new Set([403, 429, 502, 503, 504]);
+const RAW_GITHUB_URL =
+  /^https:\/\/raw\.githubusercontent\.com\/([^/?#]+)\/([^/?#]+)\/([^/?#]+)\/([^?#]+)(?:[?#].*)?$/;
+const inFlightRequests = new Map<string, Promise<Response>>();
 
-export async function fetchWithPersistentCache(url: string): Promise<Response> {
-  if (!("caches" in window)) {
-    return fetch(url, { cache: "no-store" });
+type FallbackRequest = {
+  url: string;
+  init: RequestInit;
+};
+
+function toRawGithubFallbackRequests(url: string): FallbackRequest[] {
+  const match = url.match(RAW_GITHUB_URL);
+  if (!match) {
+    return [];
   }
 
-  const cache = await caches.open(APP_HTTP_CACHE);
-  const cachedResponse = await cache.match(url);
-  if (cachedResponse) {
-    return cachedResponse.clone();
+  const [, owner, repository, ref, path] = match;
+  return [
+    {
+      url: `https://raw.githubusercontent.com/${owner}/${repository}/refs/heads/${ref}/${path}`,
+      init: { cache: "no-store" },
+    },
+    {
+      url: `https://api.github.com/repos/${owner}/${repository}/contents/${path}?ref=${ref}`,
+      init: {
+        cache: "no-store",
+        headers: {
+          Accept: "application/vnd.github.raw+json",
+        },
+      },
+    },
+  ];
+}
+
+function createDualNetworkFailureError(
+  url: string,
+  primaryError: unknown,
+): Error {
+  const error = new Error(
+    `Unable to fetch ${url} from GitHub or either fallback source.`,
+  ) as Error & { cause?: unknown };
+  error.cause = primaryError;
+  return error;
+}
+
+async function fetchFallbackRequests(
+  url: string,
+  fallbackRequests: FallbackRequest[],
+  primaryResponse: Response | null,
+  primaryError: unknown,
+): Promise<Response> {
+  let firstFallbackHttpFailure: Response | null = null;
+
+  for (const fallbackRequest of fallbackRequests) {
+    try {
+      const response = await fetch(fallbackRequest.url, fallbackRequest.init);
+      if (response.ok) {
+        return response;
+      }
+
+      firstFallbackHttpFailure ??= response;
+    } catch {
+      // Continue to the next bounded fallback source.
+    }
   }
 
-  const response = await fetch(url, { cache: "no-store" });
-  if (response.ok) {
+  if (primaryResponse) {
+    return primaryResponse;
+  }
+  if (firstFallbackHttpFailure) {
+    return firstFallbackHttpFailure;
+  }
+
+  throw createDualNetworkFailureError(url, primaryError);
+}
+
+async function fetchWithRawGithubFallback(url: string): Promise<Response> {
+  const fallbackRequests = toRawGithubFallbackRequests(url);
+
+  try {
+    const primaryResponse = await fetch(url, { cache: "no-store" });
+    if (
+      fallbackRequests.length === 0
+      || !RAW_GITHUB_RETRYABLE_STATUSES.has(primaryResponse.status)
+    ) {
+      return primaryResponse;
+    }
+
+    return fetchFallbackRequests(
+      url,
+      fallbackRequests,
+      primaryResponse,
+      null,
+    );
+  } catch (primaryError) {
+    if (fallbackRequests.length === 0) {
+      throw primaryError;
+    }
+
+    return fetchFallbackRequests(url, fallbackRequests, null, primaryError);
+  }
+}
+
+async function fetchAndCache(
+  url: string,
+  cache: Cache | null,
+): Promise<Response> {
+  const response = await fetchWithRawGithubFallback(url);
+  if (response.ok && cache) {
     await cache.put(url, response.clone());
   }
 
   return response;
+}
+
+export async function fetchWithPersistentCache(url: string): Promise<Response> {
+  let cache: Cache | null = null;
+  if ("caches" in window) {
+    cache = await caches.open(APP_HTTP_CACHE);
+    const cachedResponse = await cache.match(url);
+    if (cachedResponse) {
+      return cachedResponse.clone();
+    }
+  }
+
+  const existingRequest = inFlightRequests.get(url);
+  if (existingRequest) {
+    return (await existingRequest).clone();
+  }
+
+  let requestPromise: Promise<Response>;
+  requestPromise = fetchAndCache(url, cache).finally(() => {
+    if (inFlightRequests.get(url) === requestPromise) {
+      inFlightRequests.delete(url);
+    }
+  });
+  inFlightRequests.set(url, requestPromise);
+
+  return (await requestPromise).clone();
 }
 
 export async function fetchImageObjectUrlWithPersistentCache(
