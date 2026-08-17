@@ -26,6 +26,11 @@ Detailed Unbound Pokedex tracker with:
 2. Start the app: `docker compose up --build`
 3. Open `http://localhost:5173`
 
+If you have GNU Make installed, the same workflow is available through the
+Makefile: run `make dev` to start the app, `make build` to run the production
+build, `make logs` to follow its logs, and `make stop` to shut it down.
+Windows users without Make can use the Docker Compose command above directly.
+
 ### Without Docker
 
 1. Install Node.js 20+.
