@@ -3158,7 +3158,7 @@ input[type="number"]::-webkit-inner-spin-button {
   grid-template-rows: auto minmax(0, 1fr);
   align-items: stretch;
   min-height: 100dvh;
-  overflow-x: hidden;
+  overflow-x: clip;
 }
 
 .app-topbar {
